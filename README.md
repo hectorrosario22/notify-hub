@@ -1,4 +1,4 @@
-# notify-hub
+# NotifyHub
 
 A backend-focused microservice for sending and managing notifications across multiple channels: **Push (real-time)**, **Email**, **SMS**, and **WhatsApp**. Designed to be consumed by other modules/services via a centralized API.
 

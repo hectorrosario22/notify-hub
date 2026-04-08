@@ -8,7 +8,7 @@ This repository is in the planning/design phase. Only the README and LICENSE exi
 
 ## What This Is
 
-**notify-hub** is a backend microservice for sending and managing notifications across four channels: Push (real-time), Email, SMS, and WhatsApp. It is designed to be consumed by other services via a centralized API — it does not manage users, accepting only an external `recipientUserId` (UUID).
+**NotifyHub** is a backend microservice for sending and managing notifications across four channels: Push (real-time), Email, SMS, and WhatsApp. It is designed to be consumed by other services via a centralized API — it does not manage users, accepting only an external `recipientUserId` (UUID).
 
 ## Planned Tech Stack
 
