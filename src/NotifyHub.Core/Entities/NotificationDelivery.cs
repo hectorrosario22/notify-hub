@@ -37,6 +37,12 @@ public class NotificationDelivery
 
     public void MarkAsFailed(string errorMessage)
     {
-        throw new NotImplementedException();
+        if (string.IsNullOrWhiteSpace(errorMessage))
+            throw new ArgumentException("Error message cannot be empty.", nameof(errorMessage));
+
+        Status = DeliveryStatus.Failed;
+        ErrorMessage = errorMessage;
+        RetryCount++;
+        _onStatusChanged();
     }
 }
