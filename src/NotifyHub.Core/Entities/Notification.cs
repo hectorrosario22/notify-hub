@@ -86,6 +86,16 @@ public class Notification
 
     private void RecalculateStatus()
     {
-        // implemented in Task 7
+        var statuses = _deliveries.Select(d => d.Status).ToList();
+
+        Status = statuses switch
+        {
+            _ when statuses.Any(s => s == DeliveryStatus.Pending)  => NotificationStatus.Pending,
+            _ when statuses.All(s => s == DeliveryStatus.Sent)     => NotificationStatus.Delivered,
+            _ when statuses.All(s => s == DeliveryStatus.Failed)   => NotificationStatus.Failed,
+            _                                                        => NotificationStatus.Partial
+        };
+
+        UpdatedAt = DateTime.UtcNow;
     }
 }

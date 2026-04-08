@@ -176,4 +176,69 @@ public class NotificationTests
         Assert.True(notification.IsRead);
         Assert.Equal(firstReadAt, notification.ReadAt);
     }
+
+    [Fact]
+    public void Status_WhenAllDeliveriesSent_IsDelivered()
+    {
+        var channels = new Dictionary<Channel, string>
+        {
+            { Channel.Email, "user@example.com" },
+            { Channel.Sms, "+1234567890" }
+        };
+        var notification = Notification.Create(ValidRecipientId, "Hello", "World", channels);
+
+        foreach (var delivery in notification.Deliveries)
+            delivery.MarkAsSent();
+
+        Assert.Equal(NotificationStatus.Delivered, notification.Status);
+    }
+
+    [Fact]
+    public void Status_WhenAllDeliveriesFailed_IsFailed()
+    {
+        var channels = new Dictionary<Channel, string>
+        {
+            { Channel.Email, "user@example.com" },
+            { Channel.Sms, "+1234567890" }
+        };
+        var notification = Notification.Create(ValidRecipientId, "Hello", "World", channels);
+
+        foreach (var delivery in notification.Deliveries)
+            delivery.MarkAsFailed("Provider error");
+
+        Assert.Equal(NotificationStatus.Failed, notification.Status);
+    }
+
+    [Fact]
+    public void Status_WhenMixedSentAndFailed_IsPartial()
+    {
+        var channels = new Dictionary<Channel, string>
+        {
+            { Channel.Email, "user@example.com" },
+            { Channel.Sms, "+1234567890" }
+        };
+        var notification = Notification.Create(ValidRecipientId, "Hello", "World", channels);
+        var deliveries = notification.Deliveries.ToList();
+
+        deliveries[0].MarkAsSent();
+        deliveries[1].MarkAsFailed("Provider error");
+
+        Assert.Equal(NotificationStatus.Partial, notification.Status);
+    }
+
+    [Fact]
+    public void Status_WhenAnyDeliveryPending_IsPending()
+    {
+        var channels = new Dictionary<Channel, string>
+        {
+            { Channel.Email, "user@example.com" },
+            { Channel.Sms, "+1234567890" }
+        };
+        var notification = Notification.Create(ValidRecipientId, "Hello", "World", channels);
+        var deliveries = notification.Deliveries.ToList();
+
+        deliveries[0].MarkAsSent();
+
+        Assert.Equal(NotificationStatus.Pending, notification.Status);
+    }
 }
