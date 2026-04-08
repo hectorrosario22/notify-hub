@@ -129,4 +129,51 @@ public class NotificationTests
         Assert.Throws<ArgumentException>(() =>
             Notification.Create(ValidRecipientId, "Hello", "World", channels));
     }
+
+    [Fact]
+    public void MarkAsRead_WithPushDelivery_SetsIsReadTrue()
+    {
+        var channels = new Dictionary<Channel, string> { { Channel.Push, "device-token" } };
+        var notification = Notification.Create(ValidRecipientId, "Hello", "World", channels);
+
+        notification.MarkAsRead();
+
+        Assert.True(notification.IsRead);
+    }
+
+    [Fact]
+    public void MarkAsRead_WithPushDelivery_SetsReadAt()
+    {
+        var before = DateTime.UtcNow;
+        var channels = new Dictionary<Channel, string> { { Channel.Push, "device-token" } };
+        var notification = Notification.Create(ValidRecipientId, "Hello", "World", channels);
+
+        notification.MarkAsRead();
+
+        Assert.NotNull(notification.ReadAt);
+        Assert.True(notification.ReadAt >= before);
+    }
+
+    [Fact]
+    public void MarkAsRead_WithNoPushDelivery_ThrowsInvalidOperationException()
+    {
+        var channels = new Dictionary<Channel, string> { { Channel.Email, "user@example.com" } };
+        var notification = Notification.Create(ValidRecipientId, "Hello", "World", channels);
+
+        Assert.Throws<InvalidOperationException>(() => notification.MarkAsRead());
+    }
+
+    [Fact]
+    public void MarkAsRead_WhenAlreadyRead_IsIdempotent()
+    {
+        var channels = new Dictionary<Channel, string> { { Channel.Push, "device-token" } };
+        var notification = Notification.Create(ValidRecipientId, "Hello", "World", channels);
+        notification.MarkAsRead();
+        var firstReadAt = notification.ReadAt;
+
+        notification.MarkAsRead();
+
+        Assert.True(notification.IsRead);
+        Assert.Equal(firstReadAt, notification.ReadAt);
+    }
 }

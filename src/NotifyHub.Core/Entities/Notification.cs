@@ -73,7 +73,15 @@ public class Notification
 
     public void MarkAsRead()
     {
-        throw new NotImplementedException();
+        if (!_deliveries.Any(d => d.Channel == Channel.Push))
+            throw new InvalidOperationException("Cannot mark as read a notification without a Push delivery.");
+
+        if (IsRead)
+            return;
+
+        IsRead = true;
+        ReadAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
     }
 
     private void RecalculateStatus()
