@@ -25,6 +25,26 @@ public class Notification
         string body,
         Dictionary<Channel, string> channelRecipients)
     {
+        ArgumentNullException.ThrowIfNull(channelRecipients);
+
+        if (recipientUserId == Guid.Empty)
+            throw new ArgumentException("RecipientUserId cannot be empty.", nameof(recipientUserId));
+
+        if (string.IsNullOrWhiteSpace(title))
+            throw new ArgumentException("Title cannot be empty.", nameof(title));
+
+        if (string.IsNullOrWhiteSpace(body))
+            throw new ArgumentException("Body cannot be empty.", nameof(body));
+
+        if (channelRecipients.Count == 0)
+            throw new ArgumentException("At least one channel must be specified.", nameof(channelRecipients));
+
+        foreach (var (channel, recipient) in channelRecipients)
+        {
+            if (string.IsNullOrWhiteSpace(recipient))
+                throw new ArgumentException($"Recipient for channel {channel} cannot be empty.", nameof(channelRecipients));
+        }
+
         var notification = new Notification
         {
             Id = Guid.NewGuid(),

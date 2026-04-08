@@ -68,4 +68,65 @@ public class NotificationTests
         Assert.Equal("user@example.com", delivery.Recipient);
         Assert.Equal(DeliveryStatus.Pending, delivery.Status);
     }
+
+    [Fact]
+    public void Create_WithEmptyRecipientUserId_ThrowsArgumentException()
+    {
+        var channels = new Dictionary<Channel, string> { { Channel.Email, "user@example.com" } };
+
+        Assert.Throws<ArgumentException>(() =>
+            Notification.Create(Guid.Empty, "Hello", "World", channels));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Create_WithEmptyOrNullTitle_ThrowsArgumentException(string? title)
+    {
+        var channels = new Dictionary<Channel, string> { { Channel.Email, "user@example.com" } };
+
+        Assert.Throws<ArgumentException>(() =>
+            Notification.Create(ValidRecipientId, title!, "World", channels));
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Create_WithEmptyOrNullBody_ThrowsArgumentException(string? body)
+    {
+        var channels = new Dictionary<Channel, string> { { Channel.Email, "user@example.com" } };
+
+        Assert.Throws<ArgumentException>(() =>
+            Notification.Create(ValidRecipientId, "Hello", body!, channels));
+    }
+
+    [Fact]
+    public void Create_WithNoChannels_ThrowsArgumentException()
+    {
+        var channels = new Dictionary<Channel, string>();
+
+        Assert.Throws<ArgumentException>(() =>
+            Notification.Create(ValidRecipientId, "Hello", "World", channels));
+    }
+
+    [Fact]
+    public void Create_WithNullChannels_ThrowsArgumentNullException()
+    {
+        Assert.Throws<ArgumentNullException>(() =>
+            Notification.Create(ValidRecipientId, "Hello", "World", null!));
+    }
+
+    [Fact]
+    public void Create_WithEmptyRecipientForChannel_ThrowsArgumentException()
+    {
+        var channels = new Dictionary<Channel, string>
+        {
+            { Channel.Email, "" }
+        };
+
+        Assert.Throws<ArgumentException>(() =>
+            Notification.Create(ValidRecipientId, "Hello", "World", channels));
+    }
 }
