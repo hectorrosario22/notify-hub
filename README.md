@@ -289,7 +289,7 @@ The demo UI allows you to simulate another module sending notifications to a use
 2. Copy `.env.example` to `.env` and fill in your provider credentials (SendGrid API key, SMS provider key, Meta WhatsApp token).
 3. Start all infrastructure and services with Podman Compose:
    ```bash
-   podman-compose up
+   podman compose up
    ```
    This spins up PostgreSQL, RabbitMQ, the API, and all three Workers.
 4. Open the demo UI in your browser.

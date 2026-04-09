@@ -10,14 +10,15 @@ This file provides guidance to AI agents when working with code in this reposito
 |---|---|
 | Domain entities (Core) | ✅ Complete — `Notification`, `NotificationDelivery`, enums |
 | Data contracts | ✅ Complete — request/response DTOs, `INotificationRepository` |
-| Infrastructure (EF Core / PostgreSQL) | ⬜ Not started |
-| API endpoints (ASP.NET Core) | ⬜ Not started (still has template WeatherForecast code) |
+| Infrastructure (EF Core / PostgreSQL) | ✅ Complete — DbContext, entity configs, repository |
+| DB migrations | ✅ Complete — InitialCreate (notifications + notification_deliveries) |
+| Podman Compose / infrastructure files | ✅ Complete — `compose.yml`, `.env.example` |
+| API endpoints (ASP.NET Core) | ⬜ Not started |
 | SignalR Hub | ⬜ Not started |
 | RabbitMQ / MassTransit integration | ⬜ Not started |
 | Worker Services (Email, SMS, WhatsApp) | ⬜ Stubs only |
-| Unit tests | ✅ 55+ tests passing (domain layer) |
+| Unit tests | ✅ 33 tests passing (domain layer) |
 | Integration tests | ⬜ Project scaffolded, no tests yet |
-| Podman Compose / infrastructure files | ⬜ Not started |
 
 ## What This Is
 
@@ -32,9 +33,9 @@ This file provides guidance to AI agents when working with code in this reposito
 | Real-time | SignalR (`NotificationsHub`) — *planned* |
 | Async messaging | RabbitMQ via MassTransit — *planned* |
 | Workers | .NET Worker Services (one per async channel) |
-| ORM | Entity Framework Core — *planned* |
-| Database | PostgreSQL — *planned* |
-| Infrastructure | Podman Compose — *planned* |
+| ORM | Entity Framework Core 10 (Npgsql provider) |
+| Database | PostgreSQL 17 |
+| Infrastructure | Podman Compose |
 | Email | SendGrid / SMTP — *planned* |
 | SMS | Pluggable SMS provider — *planned* |
 | WhatsApp | Meta Cloud API — *planned* |
@@ -110,11 +111,15 @@ Use the format `<type>/<short-description>`:
 ```
 feat/notification-api-endpoints
 fix/delivery-status-aggregation
-chore/add-podman-compose
+chore/add-compose
 docs/update-agents
 ```
 
 Types mirror Conventional Commits: `feat`, `fix`, `refactor`, `chore`, `docs`, `test`.
+
+### Incremental Commits
+
+Commit each logical step independently as soon as it is verified. Do not batch unrelated changes into a single commit. Examples of appropriate commit boundaries: adding packages, creating a DbContext, implementing a repository, adding a migration, updating a configuration file.
 
 ### Commit Messages
 
@@ -204,8 +209,8 @@ Adding a new channel (e.g. Telegram) requires: a new RabbitMQ queue, a new Worke
 
 All infrastructure (PostgreSQL, RabbitMQ, API, Workers) will run via Podman Compose. Configuration will require a `.env` file (copy from `.env.example`) with provider credentials.
 
-> **Note:** Podman Compose files and `.env.example` have not been created yet.
+Copy `.env.example` to `.env` before running (provider credentials are optional for local dev).
 
 ```bash
-podman-compose up   # starts everything (once files exist)
+podman compose up -d   # starts PostgreSQL (and RabbitMQ once added in M3)
 ```
