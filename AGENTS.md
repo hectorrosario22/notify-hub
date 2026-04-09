@@ -12,7 +12,7 @@ This file provides guidance to AI agents when working with code in this reposito
 | Data contracts | ✅ Complete — request/response DTOs, `INotificationRepository` |
 | Infrastructure (EF Core / PostgreSQL) | ✅ Complete — DbContext, entity configs, repository |
 | DB migrations | ✅ Complete — InitialCreate (notifications + notification_deliveries) |
-| Podman Compose / infrastructure files | ✅ Complete — `podman-compose.yml`, `.env.example` |
+| Podman Compose / infrastructure files | ✅ Complete — `compose.yml`, `.env.example` |
 | API endpoints (ASP.NET Core) | ⬜ Not started |
 | SignalR Hub | ⬜ Not started |
 | RabbitMQ / MassTransit integration | ⬜ Not started |
@@ -111,7 +111,7 @@ Use the format `<type>/<short-description>`:
 ```
 feat/notification-api-endpoints
 fix/delivery-status-aggregation
-chore/add-podman-compose
+chore/add-compose
 docs/update-agents
 ```
 
@@ -212,5 +212,5 @@ All infrastructure (PostgreSQL, RabbitMQ, API, Workers) will run via Podman Comp
 Copy `.env.example` to `.env` before running (provider credentials are optional for local dev).
 
 ```bash
-podman-compose up -d   # starts PostgreSQL (and RabbitMQ once added in M3)
+podman compose up -d   # starts PostgreSQL (and RabbitMQ once added in M3)
 ```
