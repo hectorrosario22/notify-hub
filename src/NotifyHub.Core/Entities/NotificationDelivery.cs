@@ -6,6 +6,16 @@ public class NotificationDelivery
 {
     private readonly Action _onStatusChanged;
 
+    // Used by EF Core during entity materialization. The callback is a no-op because EF Core
+    // cannot supply the parent Notification reference. Worker services that call MarkAsSent() or
+    // MarkAsFailed() on a DB-loaded entity must explicitly call Notification.RecalculateStatus()
+    // afterward (tracked in M3 — worker implementation milestone).
+    private NotificationDelivery()
+    {
+        Recipient = string.Empty;
+        _onStatusChanged = static () => { };
+    }
+
     internal NotificationDelivery(Guid notificationId, Channel channel, string recipient, Action onStatusChanged)
     {
         Id = Guid.NewGuid();
