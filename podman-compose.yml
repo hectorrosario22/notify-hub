@@ -1,0 +1,10 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: notifyhub
+      POSTGRES_USER: notifyhub
+      POSTGRES_PASSWORD: notifyhub
+    ports:
+      - "5432:5432"
+    # No volumes — data is ephemeral for local dev and testing
