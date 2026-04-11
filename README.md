@@ -283,7 +283,7 @@ Clients join a group by `userId` on connection, so events are targeted — a use
 
 ## Running the Demo
 
-The demo UI allows you to simulate another module sending notifications to a user and see them arrive in real-time.
+> **Note:** The demo UI (M5) is not yet implemented. The infrastructure runs fully — you can send notifications via the API and verify behavior with any HTTP client. The steps below cover infrastructure setup; the browser UI is coming soon.
 
 1. Clone the repository.
 2. Copy `.env.example` to `.env` and fill in your provider credentials (SendGrid API key, SMS provider key, Meta WhatsApp token).
@@ -292,8 +292,4 @@ The demo UI allows you to simulate another module sending notifications to a use
    podman compose up
    ```
    This spins up PostgreSQL, RabbitMQ, the API, and all three Workers.
-4. Open the demo UI in your browser.
-5. Generate a UUID (there's a button for that) — this is your `recipientUserId`.
-6. Fill in the notification form and select one or more channels.
-7. Watch the bell icon update in real-time as push notifications arrive.
-8. Switch to the **Deliveries** tab to inspect the per-channel status of each notification.
+4. Use any HTTP client (curl, Postman, etc.) to call `POST /notifications` and verify end-to-end delivery through the API and worker logs.
