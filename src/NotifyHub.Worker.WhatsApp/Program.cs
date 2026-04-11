@@ -13,10 +13,15 @@ builder.Services.AddMassTransit(x =>
     x.AddConsumer<SendWhatsAppConsumer>();
     x.UsingRabbitMq((context, cfg) =>
     {
-        cfg.Host(builder.Configuration["RabbitMQ:Host"] ?? "localhost", h =>
+        var rabbitHost = builder.Configuration["RabbitMQ:Host"] ?? "localhost";
+        var rabbitPort = builder.Configuration["RabbitMQ:Port"] ?? "5672";
+        var rabbitUser = builder.Configuration["RabbitMQ:Username"] ?? "guest";
+        var rabbitPass = builder.Configuration["RabbitMQ:Password"] ?? "guest";
+
+        cfg.Host(new Uri($"rabbitmq://{rabbitHost}:{rabbitPort}"), h =>
         {
-            h.Username(builder.Configuration["RabbitMQ:Username"] ?? "guest");
-            h.Password(builder.Configuration["RabbitMQ:Password"] ?? "guest");
+            h.Username(rabbitUser);
+            h.Password(rabbitPass);
         });
         cfg.ConfigureEndpoints(context);
     });
