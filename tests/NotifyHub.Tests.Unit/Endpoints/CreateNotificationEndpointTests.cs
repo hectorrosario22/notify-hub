@@ -1,10 +1,13 @@
 using FluentValidation;
 using FluentValidation.Results;
+using MassTransit;
+using ValidationResult = FluentValidation.Results.ValidationResult;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
 using NSubstitute;
 using NotifyHub.Api.Endpoints;
 using NotifyHub.Api.Hubs;
+using NotifyHub.Contracts.Messages;
 using NotifyHub.Contracts.Requests;
 using NotifyHub.Contracts.Responses;
 using NotifyHub.Core.Entities;
@@ -18,6 +21,7 @@ public class CreateNotificationEndpointTests
     private readonly INotificationRepository _repository = Substitute.For<INotificationRepository>();
     private readonly IValidator<CreateNotificationRequest> _validator = Substitute.For<IValidator<CreateNotificationRequest>>();
     private readonly IHubContext<NotificationsHub> _hubContext = Substitute.For<IHubContext<NotificationsHub>>();
+    private readonly IPublishEndpoint _publishEndpoint = Substitute.For<IPublishEndpoint>();
     private readonly IClientProxy _clientProxy = Substitute.For<IClientProxy>();
 
     public CreateNotificationEndpointTests()
@@ -40,7 +44,7 @@ public class CreateNotificationEndpointTests
     }
 
     private Task<IResult> CallEndpoint(CreateNotificationRequest request) =>
-        CreateNotificationEndpoint.HandleAsync(request, _repository, _validator, _hubContext, CancellationToken.None);
+        CreateNotificationEndpoint.HandleAsync(request, _repository, _validator, _hubContext, _publishEndpoint, CancellationToken.None);
 
     [Fact]
     public async Task HandleAsync_ValidRequest_Returns202WithNotificationResponse()
@@ -176,5 +180,87 @@ public class CreateNotificationEndpointTests
             Arg.Any<string>(),
             Arg.Any<object?[]>(),
             Arg.Any<CancellationToken>());
+    }
+
+    // --- MassTransit publishing tests ---
+
+    [Fact]
+    public async Task HandleAsync_WithEmailChannel_PublishesSendEmailMessage()
+    {
+        var request = ValidRequest(); // email channel
+        SetupValidValidator(request);
+
+        await CallEndpoint(request);
+
+        await _publishEndpoint.Received(1).Publish(
+            Arg.Is<SendEmailMessage>(m =>
+                m.Recipient == "user@example.com" &&
+                m.Title == request.Title &&
+                m.Body == request.Body),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_WithSmsChannel_PublishesSendSmsMessage()
+    {
+        var request = new CreateNotificationRequest(Guid.NewGuid(), "Title", "Body",
+            new Dictionary<string, string> { { "sms", "+1234567890" } });
+        SetupValidValidator(request);
+
+        await CallEndpoint(request);
+
+        await _publishEndpoint.Received(1).Publish(
+            Arg.Is<SendSmsMessage>(m => m.Recipient == "+1234567890"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_WithWhatsAppChannel_PublishesSendWhatsAppMessage()
+    {
+        var request = new CreateNotificationRequest(Guid.NewGuid(), "Title", "Body",
+            new Dictionary<string, string> { { "whatsapp", "+1234567890" } });
+        SetupValidValidator(request);
+
+        await CallEndpoint(request);
+
+        await _publishEndpoint.Received(1).Publish(
+            Arg.Is<SendWhatsAppMessage>(m => m.Recipient == "+1234567890"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_WithPushOnly_DoesNotPublishAnyMessage()
+    {
+        var request = new CreateNotificationRequest(Guid.NewGuid(), "Title", "Body",
+            new Dictionary<string, string> { { "push", "device-token" } });
+        SetupValidValidator(request);
+
+        await CallEndpoint(request);
+
+        await _publishEndpoint.DidNotReceive().Publish(
+            Arg.Any<SendEmailMessage>(), Arg.Any<CancellationToken>());
+        await _publishEndpoint.DidNotReceive().Publish(
+            Arg.Any<SendSmsMessage>(), Arg.Any<CancellationToken>());
+        await _publishEndpoint.DidNotReceive().Publish(
+            Arg.Any<SendWhatsAppMessage>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task HandleAsync_WithMultipleAsyncChannels_PublishesAllMessages()
+    {
+        var request = new CreateNotificationRequest(Guid.NewGuid(), "Title", "Body",
+            new Dictionary<string, string>
+            {
+                { "email", "user@example.com" },
+                { "sms", "+1234567890" }
+            });
+        SetupValidValidator(request);
+
+        await CallEndpoint(request);
+
+        await _publishEndpoint.Received(1).Publish(
+            Arg.Any<SendEmailMessage>(), Arg.Any<CancellationToken>());
+        await _publishEndpoint.Received(1).Publish(
+            Arg.Any<SendSmsMessage>(), Arg.Any<CancellationToken>());
     }
 }
