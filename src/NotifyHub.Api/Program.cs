@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using NotifyHub.Api.Endpoints;
+using NotifyHub.Api.Middleware;
 using NotifyHub.Infrastructure;
 using NotifyHub.Infrastructure.Persistence;
 
@@ -22,6 +23,7 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.UseMiddleware<ExceptionHandlerMiddleware>();
 app.UseHttpsRedirection();
 app.MapEndpoints();
 
