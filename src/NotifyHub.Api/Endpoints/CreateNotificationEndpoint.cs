@@ -1,4 +1,6 @@
 using FluentValidation;
+using Microsoft.AspNetCore.SignalR;
+using NotifyHub.Api.Hubs;
 using NotifyHub.Api.Mapping;
 using NotifyHub.Contracts.Requests;
 using NotifyHub.Contracts.Responses;
@@ -23,6 +25,7 @@ public sealed class CreateNotificationEndpoint : IEndpoint
         CreateNotificationRequest request,
         INotificationRepository repository,
         IValidator<CreateNotificationRequest> validator,
+        IHubContext<NotificationsHub> hubContext,
         CancellationToken ct)
     {
         var validationResult = await validator.ValidateAsync(request, ct);
@@ -46,7 +49,25 @@ public sealed class CreateNotificationEndpoint : IEndpoint
 
         await repository.AddAsync(notification, ct);
 
-        var response = NotificationMapper.ToResponse(notification);
-        return Results.Created($"/notifications/{notification.Id}", response);
+        // Handle push delivery synchronously via SignalR
+        var pushDelivery = notification.Deliveries.FirstOrDefault(d => d.Channel == Channel.Push);
+        if (pushDelivery is not null)
+        {
+            pushDelivery.MarkAsSent();
+            await repository.UpdateAsync(notification, ct);
+
+            var group = hubContext.Clients.Group(request.RecipientUserId.ToString());
+            var response = NotificationMapper.ToResponse(notification);
+
+            await group.SendAsync("NewNotification", response, ct);
+
+            var unreadCount = await repository.GetUnreadCountAsync(request.RecipientUserId, ct);
+            await group.SendAsync("UnreadCountUpdated", new { count = unreadCount }, ct);
+
+            return Results.Created($"/notifications/{notification.Id}", response);
+        }
+
+        var result = NotificationMapper.ToResponse(notification);
+        return Results.Created($"/notifications/{notification.Id}", result);
     }
 }
