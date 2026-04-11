@@ -56,4 +56,15 @@ internal sealed class NotificationRepository(NotifyHubDbContext context) : INoti
         context.Notifications.Update(notification);
         await context.SaveChangesAsync(ct);
     }
+
+    public async Task MarkAllAsReadAsync(Guid userId, CancellationToken ct = default)
+        => await context.Notifications
+            .Where(n => n.RecipientUserId == userId
+                && !n.IsRead
+                && n.Deliveries.Any(d => d.Channel == Channel.Push))
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(n => n.IsRead, true)
+                .SetProperty(n => n.ReadAt, DateTime.UtcNow)
+                .SetProperty(n => n.UpdatedAt, DateTime.UtcNow),
+                ct);
 }
