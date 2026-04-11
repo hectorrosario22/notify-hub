@@ -18,7 +18,6 @@ public class SendEmailConsumerTests(NotifyHubApiFactory factory)
     [Fact]
     public async Task Consume_ValidMessage_MarksDeliveryAsSent()
     {
-        // Create a notification directly via repository
         using var scope = factory.Services.CreateScope();
         var repo = scope.ServiceProvider.GetRequiredService<INotificationRepository>();
 
@@ -35,7 +34,6 @@ public class SendEmailConsumerTests(NotifyHubApiFactory factory)
 
         var emailDelivery = notification.Deliveries.First(d => d.Channel == Channel.Email);
 
-        // Set up MassTransit test harness with the consumer and real repository
         await using var provider = new ServiceCollection()
             .AddScoped<IEmailSender, FakeEmailSender>()
             .AddScoped<INotificationRepository>(_ =>
@@ -65,7 +63,6 @@ public class SendEmailConsumerTests(NotifyHubApiFactory factory)
 
         await harness.Stop();
 
-        // Verify delivery status in DB
         using var verifyScope = factory.Services.CreateScope();
         var verifyRepo = verifyScope.ServiceProvider.GetRequiredService<INotificationRepository>();
         var updated = await verifyRepo.GetByIdAsync(notification.Id);

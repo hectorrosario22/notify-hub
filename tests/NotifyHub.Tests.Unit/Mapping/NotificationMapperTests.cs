@@ -55,8 +55,6 @@ public class NotificationMapperTests
     [Fact]
     public void ToResponse_WithNoDeliveries_ReturnsEmptyList()
     {
-        // Create a notification with one delivery to get a valid object,
-        // then test that mapper handles the deliveries correctly
         var notification = Notification.Create(
             Guid.NewGuid(),
             "Title",

@@ -254,11 +254,9 @@ public class NotificationTests
         };
         var notification = Notification.Create(ValidRecipientId, "Hello", "World", channels);
 
-        // Mark all deliveries as sent (callback fires automatically here since factory-created)
         foreach (var delivery in notification.Deliveries)
             delivery.MarkAsSent();
 
-        // RefreshStatus should produce the same result
         notification.RefreshStatus();
 
         Assert.Equal(NotificationStatus.Delivered, notification.Status);

@@ -104,7 +104,6 @@ public class SendEmailConsumerTests
 
         await _consumer.Consume(CreateContext(message));
 
-        // After RefreshStatus, a single email delivery marked as Sent should give Delivered status
         Assert.Equal(NotificationStatus.Delivered, notification.Status);
     }
 }

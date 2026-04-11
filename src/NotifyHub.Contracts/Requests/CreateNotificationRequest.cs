@@ -1,10 +1,10 @@
 namespace NotifyHub.Contracts.Requests;
 
-/// <summary>
-/// Channels is a dictionary mapping channel name to recipient address.
-/// Valid channel names: "push", "email", "sms", "whatsapp".
+/// <param name="Channels">
+/// Maps channel name to recipient address.
+/// Valid keys: "push", "email", "sms", "whatsapp".
 /// Example: { "push": "user-device-token", "email": "user@example.com" }
-/// </summary>
+/// </param>
 public sealed record CreateNotificationRequest(
     Guid RecipientUserId,
     string Title,

@@ -38,7 +38,6 @@ internal sealed class NotificationConfiguration : IEntityTypeConfiguration<Notif
         builder.Property(n => n.CreatedAt).IsRequired();
         builder.Property(n => n.UpdatedAt).IsRequired();
 
-        // _deliveries is the private backing field for the Deliveries navigation property
         builder.Navigation(n => n.Deliveries)
             .HasField("_deliveries")
             .UsePropertyAccessMode(PropertyAccessMode.Field);

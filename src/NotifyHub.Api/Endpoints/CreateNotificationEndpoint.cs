@@ -52,7 +52,6 @@ public sealed class CreateNotificationEndpoint : IEndpoint
 
         await repository.AddAsync(notification, ct);
 
-        // Publish async channel messages to RabbitMQ
         foreach (var delivery in notification.Deliveries)
         {
             switch (delivery.Channel)
@@ -72,7 +71,6 @@ public sealed class CreateNotificationEndpoint : IEndpoint
             }
         }
 
-        // Handle push delivery synchronously via SignalR
         var pushDelivery = notification.Deliveries.FirstOrDefault(d => d.Channel == Channel.Push);
         if (pushDelivery is not null)
         {
