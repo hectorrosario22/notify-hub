@@ -241,4 +241,26 @@ public class NotificationTests
 
         Assert.Equal(NotificationStatus.Pending, notification.Status);
     }
+
+    [Fact]
+    public void RefreshStatus_AfterDeliveryMarkedSent_UpdatesAggregateStatus()
+    {
+        // Simulates a DB-loaded entity where the callback is a no-op:
+        // We call RefreshStatus() explicitly to recalculate
+        var channels = new Dictionary<Channel, string>
+        {
+            { Channel.Email, "user@example.com" },
+            { Channel.Sms, "+1234567890" }
+        };
+        var notification = Notification.Create(ValidRecipientId, "Hello", "World", channels);
+
+        // Mark all deliveries as sent (callback fires automatically here since factory-created)
+        foreach (var delivery in notification.Deliveries)
+            delivery.MarkAsSent();
+
+        // RefreshStatus should produce the same result
+        notification.RefreshStatus();
+
+        Assert.Equal(NotificationStatus.Delivered, notification.Status);
+    }
 }
