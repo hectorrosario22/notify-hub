@@ -8,6 +8,7 @@ using NotifyHub.Infrastructure.Persistence;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
+builder.Services.AddSignalR();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -28,5 +29,6 @@ if (app.Environment.IsDevelopment())
 app.UseMiddleware<ExceptionHandlerMiddleware>();
 app.UseHttpsRedirection();
 app.MapEndpoints();
+app.MapHub<NotifyHub.Api.Hubs.NotificationsHub>("/hubs/notifications");
 
 app.Run();
