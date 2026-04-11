@@ -17,7 +17,7 @@ This file provides guidance to AI agents when working with code in this reposito
 | SignalR Hub | ✅ Complete — `NotificationsHub` with group management |
 | RabbitMQ / MassTransit integration | ✅ Complete — publishing from API, consumers in workers |
 | Worker Services (Email, SMS, WhatsApp) | ✅ Complete — fake providers with MassTransit consumers |
-| Unit tests | ✅ 77 tests passing |
+| Unit tests | ✅ 90 tests passing |
 | Integration tests | ✅ 10 tests passing (compose-managed PostgreSQL + RabbitMQ) |
 | Dockerfiles | ✅ Complete — multi-stage for API (aspnet) and workers (runtime) |
 | Demo UI (M5) | ⬜ Not started |
