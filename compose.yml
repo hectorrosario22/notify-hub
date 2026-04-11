@@ -7,4 +7,84 @@ services:
       POSTGRES_PASSWORD: notifyhub
     ports:
       - "5432:5432"
-    # No volumes — data is ephemeral for local dev and testing
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notifyhub"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: notifyhub
+      RABBITMQ_DEFAULT_PASS: notifyhub
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: src/NotifyHub.Api/Dockerfile
+    ports:
+      - "5000:8080"
+    environment:
+      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=notifyhub;Username=notifyhub;Password=notifyhub"
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Username: notifyhub
+      RabbitMQ__Password: notifyhub
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  worker-email:
+    build:
+      context: .
+      dockerfile: src/NotifyHub.Worker.Email/Dockerfile
+    environment:
+      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=notifyhub;Username=notifyhub;Password=notifyhub"
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Username: notifyhub
+      RabbitMQ__Password: notifyhub
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  worker-sms:
+    build:
+      context: .
+      dockerfile: src/NotifyHub.Worker.Sms/Dockerfile
+    environment:
+      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=notifyhub;Username=notifyhub;Password=notifyhub"
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Username: notifyhub
+      RabbitMQ__Password: notifyhub
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  worker-whatsapp:
+    build:
+      context: .
+      dockerfile: src/NotifyHub.Worker.WhatsApp/Dockerfile
+    environment:
+      ConnectionStrings__Default: "Host=postgres;Port=5432;Database=notifyhub;Username=notifyhub;Password=notifyhub"
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__Username: notifyhub
+      RabbitMQ__Password: notifyhub
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
