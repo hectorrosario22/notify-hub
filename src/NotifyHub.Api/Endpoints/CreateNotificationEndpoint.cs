@@ -1,0 +1,52 @@
+using FluentValidation;
+using NotifyHub.Api.Mapping;
+using NotifyHub.Contracts.Requests;
+using NotifyHub.Contracts.Responses;
+using NotifyHub.Core.Entities;
+using NotifyHub.Core.Enums;
+using NotifyHub.Core.Repositories;
+
+namespace NotifyHub.Api.Endpoints;
+
+public sealed class CreateNotificationEndpoint : IEndpoint
+{
+    public void MapEndpoint(IEndpointRouteBuilder app)
+    {
+        app.MapPost("/notifications", HandleAsync)
+            .WithName("CreateNotification")
+            .Produces<NotificationResponse>(StatusCodes.Status202Accepted)
+            .ProducesValidationProblem()
+            .WithOpenApi();
+    }
+
+    public static async Task<IResult> HandleAsync(
+        CreateNotificationRequest request,
+        INotificationRepository repository,
+        IValidator<CreateNotificationRequest> validator,
+        CancellationToken ct)
+    {
+        var validationResult = await validator.ValidateAsync(request, ct);
+        if (!validationResult.IsValid)
+        {
+            var errors = validationResult.Errors
+                .GroupBy(e => e.PropertyName)
+                .ToDictionary(g => g.Key, g => g.Select(e => e.ErrorMessage).ToArray());
+            return Results.ValidationProblem(errors);
+        }
+
+        var channelRecipients = request.Channels.ToDictionary(
+            kv => Enum.Parse<Channel>(kv.Key, ignoreCase: true),
+            kv => kv.Value);
+
+        var notification = Notification.Create(
+            request.RecipientUserId,
+            request.Title,
+            request.Body,
+            channelRecipients);
+
+        await repository.AddAsync(notification, ct);
+
+        var response = NotificationMapper.ToResponse(notification);
+        return Results.Created($"/notifications/{notification.Id}", response);
+    }
+}
