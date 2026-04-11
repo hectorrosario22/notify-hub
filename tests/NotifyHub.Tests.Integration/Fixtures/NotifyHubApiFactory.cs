@@ -1,41 +1,48 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.AspNetCore.TestHost;
-using Testcontainers.PostgreSql;
-using Testcontainers.RabbitMq;
+using Npgsql;
 
 namespace NotifyHub.Tests.Integration.Fixtures;
 
+/// <summary>
+/// Integration test factory that connects to infrastructure services
+/// started via podman compose (postgres + rabbitmq).
+/// Run `podman compose up postgres rabbitmq -d` before running integration tests.
+/// </summary>
 public class NotifyHubApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
-        .WithImage("postgres:17-alpine")
-        .Build();
+    private const string AdminConnection =
+        "Host=localhost;Port=5432;Database=postgres;Username=notifyhub;Password=notifyhub";
 
-    private readonly RabbitMqContainer _rabbitmq = new RabbitMqBuilder()
-        .WithImage("rabbitmq:4-management-alpine")
-        .Build();
+    private const string TestDbConnection =
+        "Host=localhost;Port=5432;Database=notifyhub_test;Username=notifyhub;Password=notifyhub";
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        builder.UseSetting("ConnectionStrings:Default", _postgres.GetConnectionString());
-        builder.UseSetting("RabbitMQ:Host", _rabbitmq.Hostname);
-        builder.UseSetting("RabbitMQ:Port", _rabbitmq.GetMappedPublicPort(5672).ToString());
-        builder.UseSetting("RabbitMQ:Username", "guest");
-        builder.UseSetting("RabbitMQ:Password", "guest");
+        builder.UseSetting("ConnectionStrings:Default", TestDbConnection);
+        builder.UseSetting("RabbitMQ:Host", "localhost");
+        builder.UseSetting("RabbitMQ:Port", "5672");
+        builder.UseSetting("RabbitMQ:Username", "notifyhub");
+        builder.UseSetting("RabbitMQ:Password", "notifyhub");
         builder.UseEnvironment("Development");
     }
 
     public async Task InitializeAsync()
     {
-        await _postgres.StartAsync();
-        await _rabbitmq.StartAsync();
+        await using var conn = new NpgsqlConnection(AdminConnection);
+        await conn.OpenAsync();
+
+        await using var checkCmd = conn.CreateCommand();
+        checkCmd.CommandText = "SELECT 1 FROM pg_database WHERE datname = 'notifyhub_test'";
+        var exists = await checkCmd.ExecuteScalarAsync();
+
+        if (exists is null)
+        {
+            await using var createCmd = conn.CreateCommand();
+            createCmd.CommandText = "CREATE DATABASE notifyhub_test";
+            await createCmd.ExecuteNonQueryAsync();
+        }
     }
 
-    public new async Task DisposeAsync()
-    {
-        await _postgres.DisposeAsync();
-        await _rabbitmq.DisposeAsync();
-        await base.DisposeAsync();
-    }
+    public new Task DisposeAsync() => Task.CompletedTask;
 }
