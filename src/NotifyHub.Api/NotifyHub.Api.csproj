@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\NotifyHub.Contracts\NotifyHub.Contracts.csproj" />
     <ProjectReference Include="..\NotifyHub.Infrastructure\NotifyHub.Infrastructure.csproj" />
   </ItemGroup>
 

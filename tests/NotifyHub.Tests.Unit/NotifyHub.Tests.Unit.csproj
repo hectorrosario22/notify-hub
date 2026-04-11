@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\NotifyHub.Core\NotifyHub.Core.csproj" />
+    <ProjectReference Include="..\..\src\NotifyHub.Api\NotifyHub.Api.csproj" />
   </ItemGroup>
 
 </Project>
