@@ -4,21 +4,23 @@ This file provides guidance to AI agents when working with code in this reposito
 
 ## Project Status
 
-**Phase: Early Implementation**
+**Phase: Core Complete (M1–M4)**
 
 | Layer | Status |
 |---|---|
-| Domain entities (Core) | ✅ Complete — `Notification`, `NotificationDelivery`, enums |
+| Domain entities (Core) | ✅ Complete — `Notification`, `NotificationDelivery`, enums, `RefreshStatus` |
 | Data contracts | ✅ Complete — request/response DTOs, `INotificationRepository` |
-| Infrastructure (EF Core / PostgreSQL) | ✅ Complete — DbContext, entity configs, repository |
+| Infrastructure (EF Core / PostgreSQL) | ✅ Complete — DbContext, entity configs, repository, `MarkAllAsReadAsync` |
 | DB migrations | ✅ Complete — InitialCreate (notifications + notification_deliveries) |
-| Podman Compose / infrastructure files | ✅ Complete — `compose.yml`, `.env.example` |
-| API endpoints (ASP.NET Core) | ⬜ Not started |
-| SignalR Hub | ⬜ Not started |
-| RabbitMQ / MassTransit integration | ⬜ Not started |
-| Worker Services (Email, SMS, WhatsApp) | ⬜ Stubs only |
-| Unit tests | ✅ 33 tests passing (domain layer) |
-| Integration tests | ⬜ Project scaffolded, no tests yet |
+| Podman Compose / infrastructure files | ✅ Complete — `compose.yml` with PostgreSQL, RabbitMQ, API, 3 workers |
+| API endpoints (ASP.NET Core) | ✅ Complete — 6 endpoints with FluentValidation |
+| SignalR Hub | ✅ Complete — `NotificationsHub` with group management |
+| RabbitMQ / MassTransit integration | ✅ Complete — publishing from API, consumers in workers |
+| Worker Services (Email, SMS, WhatsApp) | ✅ Complete — fake providers with MassTransit consumers |
+| Unit tests | ✅ 90 tests passing |
+| Integration tests | ✅ 10 tests passing (compose-managed PostgreSQL + RabbitMQ) |
+| Dockerfiles | ✅ Complete — multi-stage for API (aspnet) and workers (runtime) |
+| Demo UI (M5) | ⬜ Not started |
 
 ## What This Is
 
@@ -29,27 +31,28 @@ This file provides guidance to AI agents when working with code in this reposito
 | Layer | Technology |
 |---|---|
 | Framework | .NET 10.0 / C# 13 |
-| API | ASP.NET Core |
-| Real-time | SignalR (`NotificationsHub`) — *planned* |
-| Async messaging | RabbitMQ via MassTransit — *planned* |
+| API | ASP.NET Core Minimal APIs (vertical slice `IEndpoint` pattern) |
+| Real-time | SignalR (`NotificationsHub`) |
+| Async messaging | RabbitMQ via MassTransit 9.1 |
 | Workers | .NET Worker Services (one per async channel) |
 | ORM | Entity Framework Core 10 (Npgsql provider) |
 | Database | PostgreSQL 17 |
+| Validation | FluentValidation 12 |
 | Infrastructure | Podman Compose |
-| Email | SendGrid / SMTP — *planned* |
-| SMS | Pluggable SMS provider — *planned* |
-| WhatsApp | Meta Cloud API — *planned* |
-| Testing | xUnit 2.9+ with coverlet (code coverage) |
+| Email | Fake provider (logs + simulates latency) — swap for SendGrid/SMTP |
+| SMS | Fake provider — swap for real SMS provider |
+| WhatsApp | Fake provider — swap for Meta Cloud API |
+| Testing | xUnit 2.9, NSubstitute 5.3, coverlet |
 
 ## Architecture
 
-The API handles Push synchronously (SignalR, low latency, no queue) and queues Email/SMS/WhatsApp to RabbitMQ, returning `202 Accepted` immediately. Three independent Worker Services consume their respective queues and call external providers.
+The API handles Push synchronously (SignalR, low latency, no queue) and queues Email/SMS/WhatsApp to RabbitMQ, returning `201 Created` immediately. Three independent Worker Services consume their respective queues and call external providers.
 
 ```
 Other Modules → POST /notifications → API → SignalR (push, sync)
-                                          → RabbitMQ → email queue → Email Worker → SendGrid
+                                          → RabbitMQ → email queue → Email Worker → Email Provider
                                                      → sms queue   → SMS Worker   → SMS Provider
-                                                                   → WhatsApp queue → WhatsApp Worker → Meta API
+                                                     → whatsapp queue → WhatsApp Worker → WhatsApp Provider
 All workers → PostgreSQL (update delivery status)
 ```
 
@@ -60,13 +63,13 @@ src/
   NotifyHub.Core/           ← Domain entities, enums, interfaces
   NotifyHub.Contracts/      ← Request/response DTOs, MassTransit messages
   NotifyHub.Infrastructure/ ← EF Core DbContext, repository implementations
-  NotifyHub.Api/            ← ASP.NET Core endpoints, SignalR hub
-  NotifyHub.Worker.Email/   ← MassTransit consumer → SendGrid
-  NotifyHub.Worker.Sms/     ← MassTransit consumer → SMS provider
-  NotifyHub.Worker.WhatsApp/← MassTransit consumer → Meta Cloud API
+  NotifyHub.Api/            ← ASP.NET Core endpoints, SignalR hub, middleware
+  NotifyHub.Worker.Email/   ← MassTransit consumer → FakeEmailSender
+  NotifyHub.Worker.Sms/     ← MassTransit consumer → FakeSmsSender
+  NotifyHub.Worker.WhatsApp/← MassTransit consumer → FakeWhatsAppSender
 tests/
-  NotifyHub.Tests.Unit/     ← Pure domain logic tests (no I/O)
-  NotifyHub.Tests.Integration/ ← Real DB + RabbitMQ (Testcontainers, when added)
+  NotifyHub.Tests.Unit/     ← Pure domain + endpoint handler tests (90 tests)
+  NotifyHub.Tests.Integration/ ← Real DB + RabbitMQ via compose (10 tests)
 demo/
   index.html / app.js / app.css ← Vanilla JS test UI for manual SignalR testing
 ```
@@ -93,7 +96,7 @@ Two tables:
 
 ## SignalR Events
 
-Hub: `NotificationsHub`. Clients join a group keyed by `userId` on connect.
+Hub: `NotificationsHub` at `/hubs/notifications`. Clients join a group keyed by `userId` via `JoinUserGroup`.
 
 | Event | When | Payload |
 |---|---|---|
@@ -167,8 +170,17 @@ dotnet test
 ```
 
 Test organization:
-- `NotifyHub.Tests.Unit` — pure domain logic; no database, no network, no mocks needed for domain entities
-- `NotifyHub.Tests.Integration` — real infrastructure via Testcontainers (to be configured when Infrastructure layer is implemented)
+- `NotifyHub.Tests.Unit` — pure domain logic and endpoint handler tests; NSubstitute for mocks
+- `NotifyHub.Tests.Integration` — real infrastructure via compose-managed PostgreSQL and RabbitMQ
+
+### Running Integration Tests
+
+Integration tests require PostgreSQL and RabbitMQ running via compose:
+
+```bash
+podman compose up postgres rabbitmq -d
+dotnet test
+```
 
 ### Domain-Driven Design (DDD)
 
@@ -178,18 +190,7 @@ The domain layer (`NotifyHub.Core`) follows strict DDD patterns already establis
 - **No anemic models** — behavior lives on entities, not in services or handlers
 - **`Notification` is the aggregate root**; `NotificationDelivery` is owned by it and cannot exist independently
 - **Status aggregation** (`RecalculateStatus`) is computed inside the aggregate when delivery statuses change — do not calculate it outside
-
-Example of the established pattern (see `src/NotifyHub.Core/Entities/Notification.cs`):
-
-```csharp
-public static Notification Create(Guid recipientUserId, string title, string body,
-    Dictionary<Channel, string> channels)
-{
-    ArgumentException.ThrowIfNullOrWhiteSpace(title);
-    // ... validation
-    return new Notification { ... };
-}
-```
+- **`RefreshStatus()`** must be called explicitly after `MarkAsSent()`/`MarkAsFailed()` on DB-loaded entities (delivery callback is no-op when loaded from DB)
 
 ### Code Style
 
@@ -207,10 +208,13 @@ Adding a new channel (e.g. Telegram) requires: a new RabbitMQ queue, a new Worke
 
 ## Infrastructure
 
-All infrastructure (PostgreSQL, RabbitMQ, API, Workers) will run via Podman Compose. Configuration will require a `.env` file (copy from `.env.example`) with provider credentials.
-
-Copy `.env.example` to `.env` before running (provider credentials are optional for local dev).
+All infrastructure runs via Podman Compose:
 
 ```bash
-podman compose up -d   # starts PostgreSQL (and RabbitMQ once added in M3)
+cp .env.example .env     # provider credentials optional for local dev
+podman compose up -d      # starts PostgreSQL, RabbitMQ, API (port 5000), 3 workers
 ```
+
+- API: `http://localhost:5000`
+- RabbitMQ Management: `http://localhost:15672` (notifyhub/notifyhub)
+- SignalR Hub: `ws://localhost:5000/hubs/notifications`
