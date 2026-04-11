@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\NotifyHub.Api\NotifyHub.Api.csproj" />
+    <ProjectReference Include="..\..\src\NotifyHub.Worker.Email\NotifyHub.Worker.Email.csproj" />
   </ItemGroup>
 
 </Project>
