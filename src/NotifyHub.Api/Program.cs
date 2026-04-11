@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using NotifyHub.Api.Endpoints;
 using NotifyHub.Infrastructure;
 using NotifyHub.Infrastructure.Persistence;
 
@@ -22,5 +23,6 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+app.MapEndpoints();
 
 app.Run();
