@@ -5,56 +5,56 @@
 
 ## Context
 
-MassTransit se volvió de pago (requiere licencia comercial). NotifyHub es un proyecto no comercial que usa `MassTransit.RabbitMQ v9.1.0` para publicar y consumir mensajes entre el API y 3 Workers. Se migra a **Rebus**, que es open-source y gratuito, manteniendo RabbitMQ como broker de mensajería.
+MassTransit has become a paid library requiring a commercial license. NotifyHub is a non-commercial project that uses `MassTransit.RabbitMQ v9.1.0` to publish and consume messages between the API and 3 Workers. The project migrates to **Rebus**, which is open-source and free, keeping RabbitMQ as the message broker.
 
-## Decisiones clave
+## Key Decisions
 
-| Decisión | Elección | Razón |
+| Decision | Choice | Reason |
 |---|---|---|
-| Transport | RabbitMQ (sin cambios) | Ya está en compose.yml y appsettings |
-| Nombres de colas | Explícitos y descriptivos | Más claros que los convention-based de MassTransit |
-| Reintentos | 3 intentos + dead-letter queue por canal | Resiliencia ante fallos transitorios |
-| Enfoque | Rebus directo por proyecto | Simplicidad, sin capas de abstracción innecesarias |
+| Transport | RabbitMQ (unchanged) | Already configured in compose.yml and appsettings |
+| Queue names | Explicit and descriptive | Clearer than MassTransit's convention-based names |
+| Retries | 3 attempts + dead-letter queue per channel | Resilience against transient failures |
+| Approach | Direct Rebus per project | Simplicity, no unnecessary abstraction layers |
 
-## Alcance
+## Scope
 
-### Lo que cambia
+### What changes
 
-| Categoría | Archivos |
+| Category | Files |
 |---|---|
-| Paquetes NuGet | 4 `.csproj` (Api + 3 Workers) |
-| Configuración DI | 4 `Program.cs` |
+| NuGet packages | 4 `.csproj` files (Api + 3 Workers) |
+| DI configuration | 4 `Program.cs` files |
 | Handlers | 3 consumers → 3 handlers (rename + refactor) |
 | API endpoint | `CreateNotificationEndpoint.cs` |
-| Tests unitarios | `SendEmailConsumerTests.cs`, `CreateNotificationEndpointTests.cs` |
-| Tests integración | `NotifyHubApiFactory.cs` |
+| Unit tests | `SendEmailConsumerTests.cs`, `CreateNotificationEndpointTests.cs` |
+| Integration tests | `NotifyHubApiFactory.cs` |
 
-### Lo que NO cambia
+### What does NOT change
 
-- `src/NotifyHub.Contracts/` — los mensajes son POCOs puros sin atributos MassTransit
-- `compose.yml` — RabbitMQ permanece igual
-- `appsettings.*.json` — configuración de conexión sin cambios
-- Lógica de negocio dentro de cada handler
+- `src/NotifyHub.Contracts/` — messages are plain POCOs with no MassTransit attributes
+- `compose.yml` — RabbitMQ remains unchanged
+- `appsettings.*.json` — connection configuration unchanged
+- Business logic inside each handler
 
-## Arquitectura tras la migración
+## Architecture After Migration
 
 ```
 NotifyHub.Api
   └─ CreateNotificationEndpoint
        └─ IBus.Publish(message)  ──→  RabbitMQ
-                                         ├── email-notifications  ──→  Worker.Email / SendEmailHandler
-                                         ├── sms-notifications    ──→  Worker.Sms / SendSmsHandler
-                                         └── whatsapp-notifications──→  Worker.WhatsApp / SendWhatsAppHandler
+                                         ├── email-notifications    ──→  Worker.Email / SendEmailHandler
+                                         ├── sms-notifications      ──→  Worker.Sms / SendSmsHandler
+                                         └── whatsapp-notifications ──→  Worker.WhatsApp / SendWhatsAppHandler
 ```
 
-## Paquetes NuGet
+## NuGet Packages
 
-### Remover (todos los proyectos)
+### Remove (all projects)
 ```xml
 <PackageReference Include="MassTransit.RabbitMQ" Version="9.1.0" />
 ```
 
-### Agregar (todos los proyectos)
+### Add (all projects)
 ```xml
 <PackageReference Include="Rebus" Version="8.*" />
 <PackageReference Include="Rebus.RabbitMQ" Version="9.*" />
@@ -63,15 +63,15 @@ NotifyHub.Api
 
 ## Workers: Consumers → Handlers
 
-### Interfaz
+### Interface comparison
 
-| | MassTransit (antes) | Rebus (después) |
+| | MassTransit (before) | Rebus (after) |
 |---|---|---|
-| Interfaz | `IConsumer<T>` | `IHandleMessages<T>` |
-| Método | `Consume(ConsumeContext<T> context)` | `Handle(T message)` |
-| Acceso al mensaje | `context.Message` | `message` directamente |
+| Interface | `IConsumer<T>` | `IHandleMessages<T>` |
+| Method | `Consume(ConsumeContext<T> context)` | `Handle(T message)` |
+| Message access | `context.Message` | `message` directly |
 
-### Estructura del handler
+### Handler structure
 
 ```csharp
 using Rebus.Handlers;
@@ -92,28 +92,28 @@ public class SendEmailHandler : IHandleMessages<SendEmailMessage>
 
     public async Task Handle(SendEmailMessage message)
     {
-        // misma lógica que antes — sin cambios en el cuerpo del método
+        // same business logic as before — method body unchanged
     }
 }
 ```
 
-Los archivos se mueven de `Consumers/` a `Handlers/` y los Consumer se eliminan.
+Files move from `Consumers/` to `Handlers/` and the old Consumer files are deleted.
 
 ## API: Publisher
 
 ```csharp
-// Antes
+// Before
 private readonly IPublishEndpoint _publishEndpoint;
 await _publishEndpoint.Publish<SendEmailMessage>(new SendEmailMessage(...));
 
-// Después
+// After
 private readonly IBus _bus;
 await _bus.Publish(new SendEmailMessage(...));
 ```
 
-## Configuración Program.cs
+## Program.cs Configuration
 
-### API (one-way client — solo publica)
+### API (one-way client — publish only)
 
 ```csharp
 var rabbitUser = builder.Configuration["RabbitMQ:Username"] ?? "guest";
@@ -130,10 +130,10 @@ builder.Services.AddRebus(configure => configure
 );
 ```
 
-### Workers (consume + reintentos)
+### Workers (consume + retries)
 
 ```csharp
-// Email Worker — idem para Sms y WhatsApp con sus colas respectivas
+// Email Worker — same pattern for Sms and WhatsApp with their respective queues
 builder.Services.AddRebus(configure => configure
     .Transport(t => t.UseRabbitMq(connectionString, "email-notifications"))
     .Options(o => o.SimpleRetryStrategy(
@@ -144,9 +144,9 @@ builder.Services.AddRebus(configure => configure
 builder.Services.AutoRegisterHandlersFromAssemblyOf<SendEmailHandler>();
 ```
 
-## Colas RabbitMQ
+## RabbitMQ Queues
 
-| Canal | Cola principal | Cola de errores |
+| Channel | Main queue | Error queue |
 |---|---|---|
 | Email | `email-notifications` | `email-notifications-error` |
 | SMS | `sms-notifications` | `sms-notifications-error` |
@@ -154,36 +154,36 @@ builder.Services.AutoRegisterHandlersFromAssemblyOf<SendEmailHandler>();
 
 ## Tests
 
-### Tests unitarios de Workers
+### Worker unit tests
 
 ```csharp
-// Antes — con mock de ConsumeContext
+// Before — with ConsumeContext mock
 var context = Substitute.For<ConsumeContext<SendEmailMessage>>();
 context.Message.Returns(new SendEmailMessage(...));
 await _consumer.Consume(context);
 
-// Después — directo
+// After — direct
 var message = new SendEmailMessage(...);
 await _handler.Handle(message);
 ```
 
-### Tests de endpoint e integración
+### Endpoint and integration tests
 
 ```csharp
-// Antes
+// Before
 services.AddSingleton(Substitute.For<IPublishEndpoint>());
 
-// Después
+// After
 services.AddSingleton(Substitute.For<IBus>());
 ```
 
-## Verificación end-to-end
+## End-to-End Verification
 
-1. `dotnet build` — sin errores en todos los proyectos
-2. `dotnet test --filter Unit` — todos los tests unitarios pasan
+1. `dotnet build` — no errors across all projects
+2. `dotnet test --filter Unit` — all unit tests pass
 3. `podman compose up postgres rabbitmq -d`
-4. Iniciar los 3 Workers y el API
-5. POST a `/api/notifications` con canales Email, SMS y WhatsApp
-6. Verificar en RabbitMQ Management (`http://localhost:15672`) que las colas se crean y los mensajes se procesan
-7. Verificar en DB que los deliveries quedan en estado `Sent`
+4. Start the 3 Workers and the API
+5. POST to `/api/notifications` with Email, SMS and WhatsApp channels
+6. Verify in RabbitMQ Management (`http://localhost:15672`) that queues are created and messages are processed
+7. Verify in DB that deliveries are in `Sent` status
 8. `dotnet test --filter Integration`
