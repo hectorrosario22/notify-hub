@@ -145,7 +145,7 @@ async function apiFetch(method, path, body) {
 /* ── Load inbox ── */
 async function loadNotifications() {
   try {
-    const res = await apiFetch('GET', `/notifications?userId=${state.userId}&page=1&pageSize=${PAGE_SIZE}`);
+    const res = await apiFetch('GET', `/notifications?userId=${state.userId}&page=1&pageSize=${PAGE_SIZE}&unreadOnly=false`);
     log('api', `GET /notifications → <span class="${res.ok ? 'green' : 'red'}">${res.status}</span>`);
     if (!res.ok) return;
     const data = await res.json();
