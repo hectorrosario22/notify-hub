@@ -84,6 +84,12 @@ public class Notification
         UpdatedAt = DateTime.UtcNow;
     }
 
+    /// <summary>
+    /// Explicitly recalculates the aggregate status from delivery statuses.
+    /// Required for DB-loaded entities where the delivery callback is a no-op.
+    /// </summary>
+    public void RefreshStatus() => RecalculateStatus();
+
     private void RecalculateStatus()
     {
         var statuses = _deliveries.Select(d => d.Status).ToList();
