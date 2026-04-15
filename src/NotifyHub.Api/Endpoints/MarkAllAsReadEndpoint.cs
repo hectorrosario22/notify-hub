@@ -10,8 +10,7 @@ public sealed class MarkAllAsReadEndpoint : IEndpoint
     {
         app.MapPatch("/notifications/read-all", HandleAsync)
             .WithName("MarkAllAsRead")
-            .Produces(StatusCodes.Status204NoContent)
-            .WithOpenApi();
+            .Produces(StatusCodes.Status204NoContent);
     }
 
     public static async Task<IResult> HandleAsync(

@@ -10,8 +10,7 @@ public sealed class ListNotificationsEndpoint : IEndpoint
     {
         app.MapGet("/notifications", HandleAsync)
             .WithName("ListNotifications")
-            .Produces<PagedResponse<NotificationResponse>>()
-            .WithOpenApi();
+            .Produces<PagedResponse<NotificationResponse>>();
     }
 
     public static async Task<IResult> HandleAsync(

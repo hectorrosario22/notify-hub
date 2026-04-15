@@ -19,8 +19,7 @@ public sealed class CreateNotificationEndpoint : IEndpoint
         app.MapPost("/notifications", HandleAsync)
             .WithName("CreateNotification")
             .Produces<NotificationResponse>(StatusCodes.Status202Accepted)
-            .ProducesValidationProblem()
-            .WithOpenApi();
+            .ProducesValidationProblem();
     }
 
     public static async Task<IResult> HandleAsync(

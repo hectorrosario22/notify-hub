@@ -11,8 +11,7 @@ public sealed class GetNotificationEndpoint : IEndpoint
         app.MapGet("/notifications/{id:guid}", HandleAsync)
             .WithName("GetNotification")
             .Produces<NotificationResponse>()
-            .Produces(StatusCodes.Status404NotFound)
-            .WithOpenApi();
+            .Produces(StatusCodes.Status404NotFound);
     }
 
     public static async Task<IResult> HandleAsync(

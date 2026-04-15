@@ -9,8 +9,7 @@ public sealed class GetUnreadCountEndpoint : IEndpoint
     {
         app.MapGet("/notifications/unread-count", HandleAsync)
             .WithName("GetUnreadCount")
-            .Produces<UnreadCountResponse>()
-            .WithOpenApi();
+            .Produces<UnreadCountResponse>();
     }
 
     public static async Task<IResult> HandleAsync(

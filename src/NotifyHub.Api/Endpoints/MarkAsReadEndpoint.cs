@@ -11,8 +11,7 @@ public sealed class MarkAsReadEndpoint : IEndpoint
         app.MapPatch("/notifications/{id:guid}/read", HandleAsync)
             .WithName("MarkAsRead")
             .Produces(StatusCodes.Status204NoContent)
-            .Produces(StatusCodes.Status404NotFound)
-            .WithOpenApi();
+            .Produces(StatusCodes.Status404NotFound);
     }
 
     public static async Task<IResult> HandleAsync(
