@@ -1,4 +1,3 @@
-using MassTransit;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -6,21 +5,21 @@ using NotifyHub.Contracts.Messages;
 using NotifyHub.Core.Entities;
 using NotifyHub.Core.Enums;
 using NotifyHub.Core.Repositories;
-using NotifyHub.Worker.WhatsApp.Consumers;
+using NotifyHub.Worker.WhatsApp.Handlers;
 using NotifyHub.Worker.WhatsApp.Services;
 
 namespace NotifyHub.Tests.Unit.Workers;
 
-public class SendWhatsAppConsumerTests
+public class SendWhatsAppHandlerTests
 {
     private readonly IWhatsAppSender _whatsAppSender = Substitute.For<IWhatsAppSender>();
     private readonly INotificationRepository _repository = Substitute.For<INotificationRepository>();
-    private readonly ILogger<SendWhatsAppConsumer> _logger = Substitute.For<ILogger<SendWhatsAppConsumer>>();
-    private readonly SendWhatsAppConsumer _consumer;
+    private readonly ILogger<SendWhatsAppHandler> _logger = Substitute.For<ILogger<SendWhatsAppHandler>>();
+    private readonly SendWhatsAppHandler _handler;
 
-    public SendWhatsAppConsumerTests()
+    public SendWhatsAppHandlerTests()
     {
-        _consumer = new SendWhatsAppConsumer(_whatsAppSender, _repository, _logger);
+        _handler = new SendWhatsAppHandler(_whatsAppSender, _repository, _logger);
     }
 
     private static Notification CreateTestNotification(out Guid deliveryId)
@@ -32,29 +31,33 @@ public class SendWhatsAppConsumerTests
         return notification;
     }
 
-    private ConsumeContext<SendWhatsAppMessage> CreateContext(SendWhatsAppMessage message)
-    {
-        var context = Substitute.For<ConsumeContext<SendWhatsAppMessage>>();
-        context.Message.Returns(message);
-        context.CancellationToken.Returns(CancellationToken.None);
-        return context;
-    }
-
     [Fact]
-    public async Task Consume_SuccessfulSend_MarksDeliveryAsSent()
+    public async Task Handle_SuccessfulSend_MarksDeliveryAsSent()
     {
         var notification = CreateTestNotification(out var deliveryId);
         var message = new SendWhatsAppMessage(notification.Id, deliveryId, "+1234567890", "Body");
         _repository.GetByIdAsync(notification.Id, Arg.Any<CancellationToken>()).Returns(notification);
 
-        await _consumer.Consume(CreateContext(message));
+        await _handler.Handle(message);
 
         Assert.Equal(DeliveryStatus.Sent, notification.Deliveries.First().Status);
         await _repository.Received(1).UpdateAsync(notification, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Consume_FailedSend_MarksDeliveryAsFailed()
+    public async Task Handle_SuccessfulSend_CallsWhatsAppSender()
+    {
+        var notification = CreateTestNotification(out var deliveryId);
+        var message = new SendWhatsAppMessage(notification.Id, deliveryId, "+1234567890", "Body");
+        _repository.GetByIdAsync(notification.Id, Arg.Any<CancellationToken>()).Returns(notification);
+
+        await _handler.Handle(message);
+
+        await _whatsAppSender.Received(1).SendAsync("+1234567890", "Body", Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_FailedSend_MarksDeliveryAsFailed()
     {
         var notification = CreateTestNotification(out var deliveryId);
         var message = new SendWhatsAppMessage(notification.Id, deliveryId, "+1234567890", "Body");
@@ -62,20 +65,33 @@ public class SendWhatsAppConsumerTests
         _whatsAppSender.SendAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new InvalidOperationException("WhatsApp API error"));
 
-        await _consumer.Consume(CreateContext(message));
+        await _handler.Handle(message);
 
         Assert.Equal(DeliveryStatus.Failed, notification.Deliveries.First().Status);
+        await _repository.Received(1).UpdateAsync(notification, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task Consume_NotificationNotFound_DoesNotThrow()
+    public async Task Handle_NotificationNotFound_DoesNotCallWhatsAppSender()
     {
         var message = new SendWhatsAppMessage(Guid.NewGuid(), Guid.NewGuid(), "+1234567890", "Body");
         _repository.GetByIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((Notification?)null);
 
-        await _consumer.Consume(CreateContext(message));
+        await _handler.Handle(message);
 
         await _whatsAppSender.DidNotReceive().SendAsync(
             Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_SuccessfulSend_RefreshesNotificationStatus()
+    {
+        var notification = CreateTestNotification(out var deliveryId);
+        var message = new SendWhatsAppMessage(notification.Id, deliveryId, "+1234567890", "Body");
+        _repository.GetByIdAsync(notification.Id, Arg.Any<CancellationToken>()).Returns(notification);
+
+        await _handler.Handle(message);
+
+        Assert.Equal(NotificationStatus.Delivered, notification.Status);
     }
 }

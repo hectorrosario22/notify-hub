@@ -1,22 +1,21 @@
-using MassTransit;
+using Rebus.Handlers;
 using NotifyHub.Contracts.Messages;
 using NotifyHub.Core.Repositories;
 using NotifyHub.Worker.Sms.Services;
 
-namespace NotifyHub.Worker.Sms.Consumers;
+namespace NotifyHub.Worker.Sms.Handlers;
 
-public sealed class SendSmsConsumer(
+public sealed class SendSmsHandler(
     ISmsSender smsSender,
     INotificationRepository repository,
-    ILogger<SendSmsConsumer> logger) : IConsumer<SendSmsMessage>
+    ILogger<SendSmsHandler> logger) : IHandleMessages<SendSmsMessage>
 {
-    public async Task Consume(ConsumeContext<SendSmsMessage> context)
+    public async Task Handle(SendSmsMessage message)
     {
-        var message = context.Message;
         logger.LogInformation("Processing SMS delivery {DeliveryId} for notification {NotificationId}",
             message.DeliveryId, message.NotificationId);
 
-        var notification = await repository.GetByIdAsync(message.NotificationId, context.CancellationToken);
+        var notification = await repository.GetByIdAsync(message.NotificationId, CancellationToken.None);
         if (notification is null)
         {
             logger.LogWarning("Notification {NotificationId} not found, skipping SMS delivery",
@@ -34,7 +33,7 @@ public sealed class SendSmsConsumer(
 
         try
         {
-            await smsSender.SendAsync(message.Recipient, message.Body, context.CancellationToken);
+            await smsSender.SendAsync(message.Recipient, message.Body, CancellationToken.None);
             delivery.MarkAsSent();
         }
         catch (Exception ex)
@@ -44,6 +43,6 @@ public sealed class SendSmsConsumer(
         }
 
         notification.RefreshStatus();
-        await repository.UpdateAsync(notification, context.CancellationToken);
+        await repository.UpdateAsync(notification, CancellationToken.None);
     }
 }

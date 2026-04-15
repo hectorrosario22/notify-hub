@@ -1,5 +1,5 @@
 using FluentValidation;
-using MassTransit;
+using Rebus.Bus;
 using Microsoft.AspNetCore.SignalR;
 using NotifyHub.Api.Hubs;
 using NotifyHub.Api.Mapping;
@@ -28,7 +28,7 @@ public sealed class CreateNotificationEndpoint : IEndpoint
         INotificationRepository repository,
         IValidator<CreateNotificationRequest> validator,
         IHubContext<NotificationsHub> hubContext,
-        IPublishEndpoint publishEndpoint,
+        IBus bus,
         CancellationToken ct)
     {
         var validationResult = await validator.ValidateAsync(request, ct);
@@ -57,16 +57,16 @@ public sealed class CreateNotificationEndpoint : IEndpoint
             switch (delivery.Channel)
             {
                 case Channel.Email:
-                    await publishEndpoint.Publish(new SendEmailMessage(
-                        notification.Id, delivery.Id, delivery.Recipient, notification.Title, notification.Body), ct);
+                    await bus.Send(new SendEmailMessage(
+                        notification.Id, delivery.Id, delivery.Recipient, notification.Title, notification.Body));
                     break;
                 case Channel.Sms:
-                    await publishEndpoint.Publish(new SendSmsMessage(
-                        notification.Id, delivery.Id, delivery.Recipient, notification.Body), ct);
+                    await bus.Send(new SendSmsMessage(
+                        notification.Id, delivery.Id, delivery.Recipient, notification.Body));
                     break;
                 case Channel.WhatsApp:
-                    await publishEndpoint.Publish(new SendWhatsAppMessage(
-                        notification.Id, delivery.Id, delivery.Recipient, notification.Body), ct);
+                    await bus.Send(new SendWhatsAppMessage(
+                        notification.Id, delivery.Id, delivery.Recipient, notification.Body));
                     break;
             }
         }

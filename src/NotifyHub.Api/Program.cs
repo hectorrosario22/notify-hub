@@ -1,8 +1,11 @@
 using FluentValidation;
-using MassTransit;
 using Microsoft.EntityFrameworkCore;
+using Rebus.Config;
+using Rebus.Routing.TypeBased;
+using Rebus.ServiceProvider;
 using NotifyHub.Api.Endpoints;
 using NotifyHub.Api.Middleware;
+using NotifyHub.Contracts.Messages;
 using NotifyHub.Infrastructure;
 using NotifyHub.Infrastructure.Persistence;
 
@@ -13,23 +16,17 @@ builder.Services.AddSignalR();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddInfrastructure(builder.Configuration);
 
-builder.Services.AddMassTransit(x =>
-{
-    x.UsingRabbitMq((context, cfg) =>
-    {
-        var rabbitHost = builder.Configuration["RabbitMQ:Host"] ?? "localhost";
-        var rabbitPort = builder.Configuration["RabbitMQ:Port"] ?? "5672";
-        var rabbitUser = builder.Configuration["RabbitMQ:Username"] ?? "guest";
-        var rabbitPass = builder.Configuration["RabbitMQ:Password"] ?? "guest";
+var rabbitUser = builder.Configuration["RabbitMQ:Username"] ?? "guest";
+var rabbitPass = builder.Configuration["RabbitMQ:Password"] ?? "guest";
+var rabbitHost = builder.Configuration["RabbitMQ:Host"] ?? "localhost";
+var connectionString = $"amqp://{rabbitUser}:{rabbitPass}@{rabbitHost}";
 
-        cfg.Host(new Uri($"rabbitmq://{rabbitHost}:{rabbitPort}"), h =>
-        {
-            h.Username(rabbitUser);
-            h.Password(rabbitPass);
-        });
-        cfg.ConfigureEndpoints(context);
-    });
-});
+builder.Services.AddRebus(configure => configure
+    .Transport(t => t.UseRabbitMqAsOneWayClient(connectionString))
+    .Routing(r => r.TypeBased()
+        .Map<SendEmailMessage>("email-notifications")
+        .Map<SendSmsMessage>("sms-notifications")
+        .Map<SendWhatsAppMessage>("whatsapp-notifications")));
 
 var app = builder.Build();
 

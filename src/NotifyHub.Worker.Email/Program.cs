@@ -1,31 +1,26 @@
-using MassTransit;
+using Rebus.Config;
 using NotifyHub.Infrastructure;
-using NotifyHub.Worker.Email.Consumers;
+using NotifyHub.Worker.Email.Handlers;
 using NotifyHub.Worker.Email.Services;
+using Rebus.Retry.Simple;
 
 var builder = Host.CreateApplicationBuilder(args);
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddScoped<IEmailSender, FakeEmailSender>();
 
-builder.Services.AddMassTransit(x =>
-{
-    x.AddConsumer<SendEmailConsumer>();
-    x.UsingRabbitMq((context, cfg) =>
-    {
-        var rabbitHost = builder.Configuration["RabbitMQ:Host"] ?? "localhost";
-        var rabbitPort = builder.Configuration["RabbitMQ:Port"] ?? "5672";
-        var rabbitUser = builder.Configuration["RabbitMQ:Username"] ?? "guest";
-        var rabbitPass = builder.Configuration["RabbitMQ:Password"] ?? "guest";
+var rabbitUser = builder.Configuration["RabbitMQ:Username"] ?? "guest";
+var rabbitPass = builder.Configuration["RabbitMQ:Password"] ?? "guest";
+var rabbitHost = builder.Configuration["RabbitMQ:Host"] ?? "localhost";
+var connectionString = $"amqp://{rabbitUser}:{rabbitPass}@{rabbitHost}";
 
-        cfg.Host(new Uri($"rabbitmq://{rabbitHost}:{rabbitPort}"), h =>
-        {
-            h.Username(rabbitUser);
-            h.Password(rabbitPass);
-        });
-        cfg.ConfigureEndpoints(context);
-    });
-});
+builder.Services.AddRebus(configure => configure
+    .Transport(t => t.UseRabbitMq(connectionString, "email-notifications"))
+    .Options(o => o.RetryStrategy(
+        errorQueueName: "email-notifications-error",
+        maxDeliveryAttempts: 3)));
+
+builder.Services.AutoRegisterHandlersFromAssemblyOf<SendEmailHandler>();
 
 var host = builder.Build();
 host.Run();

@@ -1,22 +1,21 @@
-using MassTransit;
+using Rebus.Handlers;
 using NotifyHub.Contracts.Messages;
 using NotifyHub.Core.Repositories;
 using NotifyHub.Worker.WhatsApp.Services;
 
-namespace NotifyHub.Worker.WhatsApp.Consumers;
+namespace NotifyHub.Worker.WhatsApp.Handlers;
 
-public sealed class SendWhatsAppConsumer(
+public sealed class SendWhatsAppHandler(
     IWhatsAppSender whatsAppSender,
     INotificationRepository repository,
-    ILogger<SendWhatsAppConsumer> logger) : IConsumer<SendWhatsAppMessage>
+    ILogger<SendWhatsAppHandler> logger) : IHandleMessages<SendWhatsAppMessage>
 {
-    public async Task Consume(ConsumeContext<SendWhatsAppMessage> context)
+    public async Task Handle(SendWhatsAppMessage message)
     {
-        var message = context.Message;
         logger.LogInformation("Processing WhatsApp delivery {DeliveryId} for notification {NotificationId}",
             message.DeliveryId, message.NotificationId);
 
-        var notification = await repository.GetByIdAsync(message.NotificationId, context.CancellationToken);
+        var notification = await repository.GetByIdAsync(message.NotificationId, CancellationToken.None);
         if (notification is null)
         {
             logger.LogWarning("Notification {NotificationId} not found, skipping WhatsApp delivery",
@@ -34,7 +33,7 @@ public sealed class SendWhatsAppConsumer(
 
         try
         {
-            await whatsAppSender.SendAsync(message.Recipient, message.Body, context.CancellationToken);
+            await whatsAppSender.SendAsync(message.Recipient, message.Body, CancellationToken.None);
             delivery.MarkAsSent();
         }
         catch (Exception ex)
@@ -44,6 +43,6 @@ public sealed class SendWhatsAppConsumer(
         }
 
         notification.RefreshStatus();
-        await repository.UpdateAsync(notification, context.CancellationToken);
+        await repository.UpdateAsync(notification, CancellationToken.None);
     }
 }

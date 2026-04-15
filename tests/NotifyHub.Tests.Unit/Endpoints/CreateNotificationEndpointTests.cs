@@ -1,6 +1,6 @@
 using FluentValidation;
 using FluentValidation.Results;
-using MassTransit;
+using Rebus.Bus;
 using ValidationResult = FluentValidation.Results.ValidationResult;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.SignalR;
@@ -21,7 +21,7 @@ public class CreateNotificationEndpointTests
     private readonly INotificationRepository _repository = Substitute.For<INotificationRepository>();
     private readonly IValidator<CreateNotificationRequest> _validator = Substitute.For<IValidator<CreateNotificationRequest>>();
     private readonly IHubContext<NotificationsHub> _hubContext = Substitute.For<IHubContext<NotificationsHub>>();
-    private readonly IPublishEndpoint _publishEndpoint = Substitute.For<IPublishEndpoint>();
+    private readonly IBus _bus = Substitute.For<IBus>();
     private readonly IClientProxy _clientProxy = Substitute.For<IClientProxy>();
 
     public CreateNotificationEndpointTests()
@@ -44,7 +44,7 @@ public class CreateNotificationEndpointTests
     }
 
     private Task<IResult> CallEndpoint(CreateNotificationRequest request) =>
-        CreateNotificationEndpoint.HandleAsync(request, _repository, _validator, _hubContext, _publishEndpoint, CancellationToken.None);
+        CreateNotificationEndpoint.HandleAsync(request, _repository, _validator, _hubContext, _bus, CancellationToken.None);
 
     [Fact]
     public async Task HandleAsync_ValidRequest_Returns202WithNotificationResponse()
@@ -182,7 +182,7 @@ public class CreateNotificationEndpointTests
             Arg.Any<CancellationToken>());
     }
 
-    // --- MassTransit publishing tests ---
+    // --- Rebus publishing tests ---
 
     [Fact]
     public async Task HandleAsync_WithEmailChannel_PublishesSendEmailMessage()
@@ -192,12 +192,16 @@ public class CreateNotificationEndpointTests
 
         await CallEndpoint(request);
 
-        await _publishEndpoint.Received(1).Publish(
-            Arg.Is<SendEmailMessage>(m =>
-                m.Recipient == "user@example.com" &&
-                m.Title == request.Title &&
-                m.Body == request.Body),
-            Arg.Any<CancellationToken>());
+        var sentCalls = _bus.ReceivedCalls()
+            .Where(c => c.GetMethodInfo().Name == nameof(IBus.Send))
+            .Select(c => c.GetArguments()[0])
+            .OfType<SendEmailMessage>()
+            .ToList();
+
+        Assert.Single(sentCalls);
+        Assert.Equal("user@example.com", sentCalls[0].Recipient);
+        Assert.Equal(request.Title, sentCalls[0].Title);
+        Assert.Equal(request.Body, sentCalls[0].Body);
     }
 
     [Fact]
@@ -209,9 +213,14 @@ public class CreateNotificationEndpointTests
 
         await CallEndpoint(request);
 
-        await _publishEndpoint.Received(1).Publish(
-            Arg.Is<SendSmsMessage>(m => m.Recipient == "+1234567890"),
-            Arg.Any<CancellationToken>());
+        var sentCalls = _bus.ReceivedCalls()
+            .Where(c => c.GetMethodInfo().Name == nameof(IBus.Send))
+            .Select(c => c.GetArguments()[0])
+            .OfType<SendSmsMessage>()
+            .ToList();
+
+        Assert.Single(sentCalls);
+        Assert.Equal("+1234567890", sentCalls[0].Recipient);
     }
 
     [Fact]
@@ -223,9 +232,14 @@ public class CreateNotificationEndpointTests
 
         await CallEndpoint(request);
 
-        await _publishEndpoint.Received(1).Publish(
-            Arg.Is<SendWhatsAppMessage>(m => m.Recipient == "+1234567890"),
-            Arg.Any<CancellationToken>());
+        var sentCalls = _bus.ReceivedCalls()
+            .Where(c => c.GetMethodInfo().Name == nameof(IBus.Send))
+            .Select(c => c.GetArguments()[0])
+            .OfType<SendWhatsAppMessage>()
+            .ToList();
+
+        Assert.Single(sentCalls);
+        Assert.Equal("+1234567890", sentCalls[0].Recipient);
     }
 
     [Fact]
@@ -237,12 +251,14 @@ public class CreateNotificationEndpointTests
 
         await CallEndpoint(request);
 
-        await _publishEndpoint.DidNotReceive().Publish(
-            Arg.Any<SendEmailMessage>(), Arg.Any<CancellationToken>());
-        await _publishEndpoint.DidNotReceive().Publish(
-            Arg.Any<SendSmsMessage>(), Arg.Any<CancellationToken>());
-        await _publishEndpoint.DidNotReceive().Publish(
-            Arg.Any<SendWhatsAppMessage>(), Arg.Any<CancellationToken>());
+        var sentMessages = _bus.ReceivedCalls()
+            .Where(c => c.GetMethodInfo().Name == nameof(IBus.Send))
+            .Select(c => c.GetArguments()[0])
+            .ToList();
+
+        Assert.Empty(sentMessages.OfType<SendEmailMessage>());
+        Assert.Empty(sentMessages.OfType<SendSmsMessage>());
+        Assert.Empty(sentMessages.OfType<SendWhatsAppMessage>());
     }
 
     [Fact]
@@ -258,9 +274,12 @@ public class CreateNotificationEndpointTests
 
         await CallEndpoint(request);
 
-        await _publishEndpoint.Received(1).Publish(
-            Arg.Any<SendEmailMessage>(), Arg.Any<CancellationToken>());
-        await _publishEndpoint.Received(1).Publish(
-            Arg.Any<SendSmsMessage>(), Arg.Any<CancellationToken>());
+        var sentMessages = _bus.ReceivedCalls()
+            .Where(c => c.GetMethodInfo().Name == nameof(IBus.Send))
+            .Select(c => c.GetArguments()[0])
+            .ToList();
+
+        Assert.Single(sentMessages.OfType<SendEmailMessage>());
+        Assert.Single(sentMessages.OfType<SendSmsMessage>());
     }
 }
