@@ -6,8 +6,8 @@ namespace NotifyHub.Tests.Integration.Fixtures;
 
 /// <summary>
 /// Integration test factory that connects to infrastructure services
-/// started via podman compose (postgres + rabbitmq).
-/// Run `podman compose up postgres rabbitmq -d` before running integration tests.
+/// started via docker compose (postgres + rabbitmq).
+/// Run `docker compose up postgres rabbitmq -d` before running integration tests.
 /// </summary>
 public class NotifyHubApiFactory : WebApplicationFactory<Program>, IAsyncLifetime
 {

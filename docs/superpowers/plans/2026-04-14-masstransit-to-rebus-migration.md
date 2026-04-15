@@ -1347,7 +1347,7 @@ git commit -m "chore: delete old MassTransit consumer files"
 - [ ] **Step 6: End-to-end smoke test (requires running infrastructure)**
 
 ```bash
-podman compose up postgres rabbitmq -d
+docker compose up postgres rabbitmq -d
 ```
 
 Start each worker in separate terminals:

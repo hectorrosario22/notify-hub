@@ -249,6 +249,6 @@ NotifyHub.Tests.Integration → Api, Infrastructure, Contracts
 ### Solution-wide
 
 - `dotnet build NotifyHub.sln` completes with no errors or warnings.
-- `podman compose up` brings up all services (API + 3 Workers + PostgreSQL + RabbitMQ).
+- `docker compose up` brings up all services (API + 3 Workers + PostgreSQL + RabbitMQ).
 - A `POST /notifications` with channel `push` delivers the notification to the Demo UI in real time.
 - A `POST /notifications` with channel `email` results in a `NotificationDeliveries` row with `status = sent` (or `failed` with a clear error message if credentials are not configured).

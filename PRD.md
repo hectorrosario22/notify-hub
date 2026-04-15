@@ -1,7 +1,7 @@
 # Product Requirements Document — NotifyHub
 
 **Version:** 1.0  
-**Status:** In Progress  
+**Status:** Complete  
 **Last updated:** April 2026
 
 ---
@@ -92,7 +92,7 @@ Since this is a microservice consumed by other services, there are two distinct 
 
 | ID | Requirement |
 |---|---|
-| NF-01 | All infrastructure must be runnable locally via a single `podman compose up` command |
+| NF-01 | All infrastructure must be runnable locally via a single `docker compose up` command |
 | NF-02 | No cloud account or paid service should be required to run the core system (provider credentials are optional for demo purposes) |
 | NF-03 | Provider integrations (email, SMS, WhatsApp) must be pluggable — swapping a provider should require no architectural changes |
 | NF-04 | Adding a new notification channel must require no database schema changes |
@@ -114,7 +114,7 @@ The system is composed of five deployable units:
 
 **Demo UI** — Minimal frontend for testing. Allows generating a UUID, sending notifications across channels, and observing real-time delivery and delivery status.
 
-All services communicate with a shared PostgreSQL database. RabbitMQ is the message broker. MassTransit is used as the .NET abstraction layer over RabbitMQ.
+All services communicate with a shared PostgreSQL database. RabbitMQ is the message broker. Rebus is used as the .NET abstraction layer over RabbitMQ.
 
 ---
 

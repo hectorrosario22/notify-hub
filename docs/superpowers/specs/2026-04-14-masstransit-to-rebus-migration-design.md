@@ -181,7 +181,7 @@ services.AddSingleton(Substitute.For<IBus>());
 
 1. `dotnet build` — no errors across all projects
 2. `dotnet test --filter Unit` — all unit tests pass
-3. `podman compose up postgres rabbitmq -d`
+3. `docker compose up postgres rabbitmq -d`
 4. Start the 3 Workers and the API
 5. POST to `/api/notifications` with Email, SMS and WhatsApp channels
 6. Verify in RabbitMQ Management (`http://localhost:15672`) that queues are created and messages are processed

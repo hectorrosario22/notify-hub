@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "frontend-design": {
+      "source": "affaan-m/everything-claude-code",
+      "sourceType": "github",
+      "computedHash": "68950c001f80b99a7a19e9d71b9323925e8f947e0473cc0adb19456ebbdfba25"
+    }
+  }
+}
