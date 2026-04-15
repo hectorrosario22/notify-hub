@@ -124,7 +124,14 @@ erDiagram
 
 ### `POST /notifications`
 
-Used by other modules to trigger a notification. Supports one or multiple channels per request.
+Used by other modules to trigger a notification. The `channels` field maps each channel name to its recipient address.
+
+| Channel | Recipient value |
+|---|---|
+| `push` | `recipientUserId` (UUID as string) |
+| `email` | email address |
+| `sms` | phone number (E.164) |
+| `whatsapp` | phone number (E.164) |
 
 **Request:**
 ```json
@@ -132,87 +139,97 @@ Used by other modules to trigger a notification. Supports one or multiple channe
   "recipientUserId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
   "title": "Your request was approved",
   "body": "Request #1234 has been approved by the compliance team.",
-  "channels": ["push", "email"],
-  "metadata": {
-    "requestId": "1234",
-    "redirectUrl": "/requests/1234"
-  },
-  "recipients": {
-    "email": "user@example.com",
-    "phone": "+15551234567"
+  "channels": {
+    "push": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "email": "user@example.com"
   }
 }
 ```
 
-**Response `202 Accepted`:**
+**Response `201 Created`:**
 ```json
 {
-  "notificationId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "recipientUserId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "title": "Your request was approved",
+  "body": "Request #1234 has been approved by the compliance team.",
   "status": "pending",
+  "isRead": false,
+  "readAt": null,
+  "createdAt": "2025-01-15T10:30:00Z",
+  "updatedAt": "2025-01-15T10:30:00Z",
   "deliveries": [
-    { "channel": "push",  "status": "pending" },
-    { "channel": "email", "status": "pending" }
+    {
+      "id": "a1b2c3d4-...",
+      "channel": "push",
+      "status": "sent",
+      "recipient": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "retryCount": 0,
+      "errorMessage": null,
+      "sentAt": "2025-01-15T10:30:00Z",
+      "createdAt": "2025-01-15T10:30:00Z"
+    },
+    {
+      "id": "e5f6g7h8-...",
+      "channel": "email",
+      "status": "pending",
+      "recipient": "user@example.com",
+      "retryCount": 0,
+      "errorMessage": null,
+      "sentAt": null,
+      "createdAt": "2025-01-15T10:30:00Z"
+    }
   ]
 }
 ```
 
-> Returns `202` (not `200`) because async channels are queued, not yet delivered.
+> Push delivery is processed synchronously and will already show `sent` in the response. Async channels (email, sms, whatsapp) will show `pending` until their worker processes them.
 
 ---
 
 ### `GET /notifications/{id}`
 
-Returns the full status of a notification and each delivery attempt. Useful for polling from the requesting module.
+Returns the full details of a notification including all delivery attempts.
 
-**Response `200 OK`:**
-```json
-{
-  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-  "title": "Your request was approved",
-  "status": "partial",
-  "createdAt": "2025-01-15T10:30:00Z",
-  "deliveries": [
-    {
-      "channel": "push",
-      "status": "sent",
-      "sentAt": "2025-01-15T10:30:01Z"
-    },
-    {
-      "channel": "email",
-      "status": "failed",
-      "errorMessage": "Invalid email address",
-      "retryCount": 3
-    }
-  ]
-}
-```
+**Response `200 OK`:** same shape as the `POST` response above.
+
+**Response `404 Not Found`** if the notification does not exist.
 
 ---
 
 ### `GET /notifications`
 
-Returns paginated notifications for a user. Consumed by the frontend bell component.
+Returns a paginated list of notifications for a user. Consumed by the frontend bell component.
 
-**Query params:** `userId` (required), `page`, `pageSize`, `unreadOnly`
+**Query params:**
+
+| Param | Type | Required | Default |
+|---|---|---|---|
+| `userId` | `guid` | yes | — |
+| `page` | `int` | yes | — |
+| `pageSize` | `int` | yes | — |
+| `unreadOnly` | `bool` | yes | — |
 
 **Response `200 OK`:**
 ```json
 {
-  "total": 48,
-  "page": 1,
-  "pageSize": 20,
   "items": [
     {
       "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "recipientUserId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
       "title": "Your request was approved",
       "body": "Request #1234 has been approved.",
+      "status": "delivered",
       "isRead": false,
+      "readAt": null,
       "createdAt": "2025-01-15T10:30:00Z",
-      "metadata": {
-        "redirectUrl": "/requests/1234"
-      }
+      "updatedAt": "2025-01-15T10:30:01Z",
+      "deliveries": []
     }
-  ]
+  ],
+  "totalCount": 48,
+  "page": 1,
+  "pageSize": 20
 }
 ```
 
@@ -220,9 +237,9 @@ Returns paginated notifications for a user. Consumed by the frontend bell compon
 
 ### `GET /notifications/unread-count`
 
-Returns only the unread count for a user. Used by the bell icon to show the badge without loading the full list.
+Returns the unread push notification count for a user. Used by the bell icon badge.
 
-**Query params:** `userId` (required)
+**Query params:** `userId` (guid, required)
 
 **Response `200 OK`:**
 ```json
@@ -235,19 +252,19 @@ Returns only the unread count for a user. Used by the bell icon to show the badg
 
 ### `PATCH /notifications/{id}/read`
 
-Marks a single push notification as read. Called when the user opens a notification in the UI.
-
-> Only applicable to notifications that include a `push` delivery.
+Marks a single notification as read and emits an `UnreadCountUpdated` SignalR event.
 
 **Response `204 No Content`**
+
+**Response `404 Not Found`** if the notification does not exist.
 
 ---
 
 ### `PATCH /notifications/read-all`
 
-Marks all unread push notifications as read for a given user.
+Marks all unread notifications as read for a user and emits an `UnreadCountUpdated` SignalR event with `count: 0`.
 
-**Query params:** `userId` (required)
+**Query params:** `userId` (guid, required)
 
 **Response `204 No Content`**
 
@@ -272,7 +289,7 @@ Clients join a group by `userId` on connection, so events are targeted — a use
 |---|---|
 | API | ASP.NET Core |
 | Real-time | SignalR |
-| Async messaging | RabbitMQ (MassTransit) |
+| Async messaging | Rebus + RabbitMQ |
 | Workers | .NET Worker Services |
 | ORM | Entity Framework Core |
 | Email | SendGrid / SMTP |
