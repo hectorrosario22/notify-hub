@@ -11,6 +11,8 @@ A backend-focused microservice for sending and managing notifications across mul
 - [Real-Time (SignalR)](#real-time-signalr)
 - [Tech Stack](#tech-stack)
 - [Running the Demo](#running-the-demo)
+- [Architecture Decision Records](./docs/adr/)
+- [Contributing](./CONTRIBUTING.md)
 
 ---
 

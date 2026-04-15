@@ -1,7 +1,7 @@
 # Product Requirements Document — NotifyHub
 
 **Version:** 1.0  
-**Status:** In Progress  
+**Status:** Complete  
 **Last updated:** April 2026
 
 ---
@@ -114,7 +114,7 @@ The system is composed of five deployable units:
 
 **Demo UI** — Minimal frontend for testing. Allows generating a UUID, sending notifications across channels, and observing real-time delivery and delivery status.
 
-All services communicate with a shared PostgreSQL database. RabbitMQ is the message broker. MassTransit is used as the .NET abstraction layer over RabbitMQ.
+All services communicate with a shared PostgreSQL database. RabbitMQ is the message broker. Rebus is used as the .NET abstraction layer over RabbitMQ.
 
 ---
 
