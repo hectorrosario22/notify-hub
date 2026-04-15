@@ -12,7 +12,7 @@ This file provides guidance to AI agents when working with code in this reposito
 | Data contracts | ✅ Complete — request/response DTOs, `INotificationRepository` |
 | Infrastructure (EF Core / PostgreSQL) | ✅ Complete — DbContext, entity configs, repository, `MarkAllAsReadAsync` |
 | DB migrations | ✅ Complete — InitialCreate (notifications + notification_deliveries) |
-| Podman Compose / infrastructure files | ✅ Complete — `compose.yml` with PostgreSQL, RabbitMQ, API, 3 workers |
+| docker compose / infrastructure files | ✅ Complete — `compose.yml` with PostgreSQL, RabbitMQ, API, 3 workers |
 | API endpoints (ASP.NET Core) | ✅ Complete — 6 endpoints with FluentValidation |
 | SignalR Hub | ✅ Complete — `NotificationsHub` with group management |
 | RabbitMQ / MassTransit integration | ✅ Complete — publishing from API, consumers in workers |
@@ -38,7 +38,7 @@ This file provides guidance to AI agents when working with code in this reposito
 | ORM | Entity Framework Core 10 (Npgsql provider) |
 | Database | PostgreSQL 17 |
 | Validation | FluentValidation 12 |
-| Infrastructure | Podman Compose |
+| Infrastructure | docker compose |
 | Email | Fake provider (logs + simulates latency) — swap for SendGrid/SMTP |
 | SMS | Fake provider — swap for real SMS provider |
 | WhatsApp | Fake provider — swap for Meta Cloud API |
@@ -132,7 +132,7 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/):
 feat(core): add MarkAsRead validation for non-push channels
 fix(api): return 404 when notification not found
 test(unit): add edge cases for partial delivery status
-chore: add Podman Compose configuration
+chore: add docker compose configuration
 ```
 
 ### Opening a Pull Request
@@ -178,7 +178,7 @@ Test organization:
 Integration tests require PostgreSQL and RabbitMQ running via compose:
 
 ```bash
-podman compose up postgres rabbitmq -d
+docker compose up postgres rabbitmq -d
 dotnet test
 ```
 
@@ -208,11 +208,11 @@ Adding a new channel (e.g. Telegram) requires: a new RabbitMQ queue, a new Worke
 
 ## Infrastructure
 
-All infrastructure runs via Podman Compose:
+All infrastructure runs via docker compose:
 
 ```bash
 cp .env.example .env     # provider credentials optional for local dev
-podman compose up -d      # starts PostgreSQL, RabbitMQ, API (port 5000), 3 workers
+docker compose up -d      # starts PostgreSQL, RabbitMQ, API (port 5000), 3 workers
 ```
 
 - API: `http://localhost:5000`

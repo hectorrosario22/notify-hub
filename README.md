@@ -71,7 +71,7 @@ graph TD
 - Email, SMS, and WhatsApp go through RabbitMQ queues to decouple the API from external provider latency and failures.
 - Each channel has its own Worker Service, allowing independent scaling and failure isolation.
 - The API returns `202 Accepted` immediately — processing is async.
-- All infrastructure (RabbitMQ, PostgreSQL) runs locally via Podman Compose — no cloud account required to run the demo.
+- All infrastructure (RabbitMQ, PostgreSQL) runs locally via docker compose — no cloud account required to run the demo.
 
 ---
 
@@ -277,7 +277,7 @@ Clients join a group by `userId` on connection, so events are targeted — a use
 | SMS | SMS Provider (pluggable) |
 | WhatsApp | Meta Cloud API |
 | Database | PostgreSQL |
-| Infrastructure | Podman Compose |
+| Infrastructure | docker compose |
 
 ---
 
@@ -287,9 +287,9 @@ The demo UI allows you to simulate another module sending notifications to a use
 
 1. Clone the repository.
 2. Copy `.env.example` to `.env` and fill in your provider credentials (SendGrid API key, SMS provider key, Meta WhatsApp token).
-3. Start all infrastructure and services with Podman Compose:
+3. Start all infrastructure and services with docker compose:
    ```bash
-   podman compose up
+   docker compose up
    ```
    This spins up PostgreSQL, RabbitMQ, the API, and all three Workers.
 4. Open the demo UI in your browser.

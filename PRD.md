@@ -92,7 +92,7 @@ Since this is a microservice consumed by other services, there are two distinct 
 
 | ID | Requirement |
 |---|---|
-| NF-01 | All infrastructure must be runnable locally via a single `podman compose up` command |
+| NF-01 | All infrastructure must be runnable locally via a single `docker compose up` command |
 | NF-02 | No cloud account or paid service should be required to run the core system (provider credentials are optional for demo purposes) |
 | NF-03 | Provider integrations (email, SMS, WhatsApp) must be pluggable — swapping a provider should require no architectural changes |
 | NF-04 | Adding a new notification channel must require no database schema changes |
