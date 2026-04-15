@@ -27,6 +27,19 @@ services:
       timeout: 3s
       retries: 5
 
+  demo:
+    image: node:22-alpine
+    working_dir: /app
+    volumes:
+      - ./demo:/app
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_BASE: http://localhost:5000
+    command: sh -c "npm install && npm run dev -- --host"
+    depends_on:
+      - api
+
   api:
     build:
       context: .

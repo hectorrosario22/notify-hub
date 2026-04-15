@@ -1,5 +1,5 @@
 /* ── Config ── */
-const API_BASE = 'http://localhost:5000';
+const API_BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:5000';
 const HUB_URL  = `${API_BASE}/hubs/notifications`;
 const PAGE_SIZE = 20;
 
