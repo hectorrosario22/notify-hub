@@ -19,6 +19,7 @@ const state = {
 /* ── DOM refs ── */
 const $ = id => document.getElementById(id);
 const statusDot      = $('statusDot');
+const statusLabel    = $('statusLabel');
 const userIdDisplay  = $('userIdDisplay');
 const regenBtn       = $('regenBtn');
 const unreadBadge    = $('unreadBadge');
@@ -89,12 +90,14 @@ async function connectHub() {
   hub.onreconnecting(() => {
     state.connected = false;
     statusDot.classList.remove('connected');
+    if (statusLabel) statusLabel.textContent = 'Reconnecting';
     log('ws', '<span class="amber">reconnecting…</span>');
   });
 
   hub.onreconnected(async () => {
     state.connected = true;
     statusDot.classList.add('connected');
+    if (statusLabel) statusLabel.textContent = 'Live';
     log('ws', '<span class="green">reconnected</span>');
     await hub.invoke('JoinUserGroup', state.userId);
   });
@@ -102,6 +105,7 @@ async function connectHub() {
   hub.onclose(() => {
     state.connected = false;
     statusDot.classList.remove('connected');
+    if (statusLabel) statusLabel.textContent = 'Offline';
     log('ws', '<span class="red">disconnected</span>');
   });
 
@@ -109,9 +113,11 @@ async function connectHub() {
     await hub.start();
     state.connected = true;
     statusDot.classList.add('connected');
+    if (statusLabel) statusLabel.textContent = 'Live';
     await hub.invoke('JoinUserGroup', state.userId);
     log('ws', '<span class="green">connected</span> · joined group <span class="hi">' + short(state.userId) + '</span>');
   } catch (err) {
+    if (statusLabel) statusLabel.textContent = 'Offline';
     log('err', `connection failed: <span class="red">${err.message}</span>`);
   }
 }
@@ -186,7 +192,7 @@ async function sendNotification() {
 
   state.sending = true;
   sendBtn.disabled = true;
-  sendBtn.textContent = '⏳ Sending…';
+  sendBtn.textContent = 'Sending…';
 
   try {
     const res = await apiFetch('POST', '/notifications', {
@@ -202,18 +208,18 @@ async function sendNotification() {
     log('api', `POST /notifications → <span class="${statusClass}">${res.status}</span>${idPart}`);
 
     if (res.ok) {
-      sendBtn.textContent = '✓ Sent';
+      sendBtn.textContent = 'Sent';
       sendBtn.classList.add('flash');
       setTimeout(() => {
         sendBtn.classList.remove('flash');
-        sendBtn.textContent = '⚡ Send Notification';
+        sendBtn.textContent = 'Send Notification';
       }, 1500);
     } else {
-      sendBtn.textContent = '⚡ Send Notification';
+      sendBtn.textContent = 'Send Notification';
     }
   } catch (err) {
     log('err', `send failed: <span class="red">${err.message}</span>`);
-    sendBtn.textContent = '⚡ Send Notification';
+    sendBtn.textContent = 'Send Notification';
   } finally {
     state.sending = false;
     sendBtn.disabled = false;
@@ -308,11 +314,18 @@ function renderInbox() {
   });
 }
 
+function chDisplayLabel(ch) {
+  if (ch === 'whatsapp') return 'WhatsApp';
+  if (ch === 'sms') return 'SMS';
+  return ch.charAt(0).toUpperCase() + ch.slice(1);
+}
+
 function notifItemHTML(n) {
   const time = relativeTime(n.createdAt);
   const channels = [...new Set((n.deliveries ?? []).map(d => d.channel))];
-  const statusTag = `<span class="tag s-${n.status}">${n.status}</span>`;
-  const channelTags = channels.map(ch => `<span class="tag ch ${ch}">${ch}</span>`).join('');
+  const statusLabel = n.status.charAt(0).toUpperCase() + n.status.slice(1);
+  const statusTag = `<span class="tag s-${n.status}">${statusLabel}</span>`;
+  const channelTags = channels.map(ch => `<span class="tag ch ${ch}">${chDisplayLabel(ch)}</span>`).join('');
   return `
     <div class="notif-top">
       <span class="notif-title-text">${esc(n.title)}</span>
@@ -339,14 +352,16 @@ function renderDetailPanel() {
 
   deliveriesGrid.innerHTML = (n.deliveries ?? []).map(d => {
     const dotClass = d.status === 'sent' ? 'sent' : d.status === 'pending' ? 'pending' : 'failed';
+    const chLabel = chDisplayLabel(d.channel);
+    const statusLabel = d.status.charAt(0).toUpperCase() + d.status.slice(1);
     const errHtml  = d.errorMessage ? `<div class="delivery-error">${esc(d.errorMessage)}</div>` : '';
     const retryHtml= d.retryCount > 0 ? `<div class="delivery-retry">retries: ${d.retryCount}</div>` : '';
     return `
       <div class="delivery-card">
         <div class="delivery-card-top">
           <div class="delivery-dot ${dotClass}"></div>
-          <span class="delivery-channel">${d.channel}</span>
-          <span class="delivery-status ${dotClass}">${d.status}</span>
+          <span class="delivery-channel">${chLabel}</span>
+          <span class="delivery-status ${dotClass}">${statusLabel}</span>
         </div>
         <div class="delivery-recipient" title="${esc(d.recipient)}">${esc(d.recipient)}</div>
         ${errHtml}${retryHtml}
@@ -391,7 +406,8 @@ function renderAddressFields() {
 
     const label = document.createElement('span');
     label.className = `addr-label ${ch}`;
-    label.textContent = ch === 'push' ? `push recipient (userId)` : ch;
+    const labelMap = { push: 'Push recipient', email: 'Email address', sms: 'Phone number', whatsapp: 'WhatsApp number' };
+    label.textContent = labelMap[ch] ?? ch;
     wrap.appendChild(label);
 
     const input = document.createElement('input');

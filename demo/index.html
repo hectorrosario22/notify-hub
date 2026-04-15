@@ -6,7 +6,7 @@
   <title>NotifyHub Demo</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="app.css">
 </head>
 <body>
@@ -14,19 +14,28 @@
   <!-- TOP BAR -->
   <header class="topbar">
     <div class="logo">
-      <div class="status-dot" id="statusDot"></div>
-      <span>NotifyHub</span>
+      <span class="logo-wordmark">NotifyHub</span>
+      <div class="status-chip">
+        <div class="status-dot" id="statusDot"></div>
+        <span class="status-label" id="statusLabel">Connecting</span>
+      </div>
     </div>
     <div class="divider"></div>
     <div class="user-id-wrap">
-      <span class="user-label">USER</span>
+      <span class="user-label">Session ID</span>
       <code class="user-id-display" id="userIdDisplay" title=""></code>
-      <button class="regen-btn" id="regenBtn" title="Generate new user ID">↻</button>
+      <button class="regen-btn" id="regenBtn" title="Generate new session ID" aria-label="Generate new session ID">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
+        </svg>
+      </button>
     </div>
     <div class="spacer"></div>
-    <button class="bell-wrap" id="bellBtn" title="Scroll to inbox">
-      <span class="bell-icon">🔔</span>
-      <span class="bell-label">UNREAD</span>
+    <button class="bell-wrap" id="bellBtn" title="Scroll to inbox" aria-label="View inbox">
+      <svg class="bell-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+      </svg>
+      <span class="bell-label">Inbox</span>
       <span class="badge" id="unreadBadge">0</span>
     </button>
   </header>
@@ -36,7 +45,7 @@
 
     <!-- LEFT: SEND FORM -->
     <aside class="left-panel">
-      <div class="panel-title">Send Notification</div>
+      <div class="panel-title">Send a Notification</div>
 
       <div class="field-group">
         <label class="field-label" for="inputTitle">Title</label>
@@ -52,16 +61,28 @@
         <span class="field-label">Channels</span>
         <div class="channels-grid">
           <button class="channel-btn active push" data-channel="push">
-            <span class="ch-icon">📡</span> push
+            <svg class="ch-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 9.79 19.79 19.79 0 01.18 1.15 2 2 0 012.18 0h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.91 7.09a16 16 0 006 6l.52-.52a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/>
+            </svg>
+            Push
           </button>
           <button class="channel-btn email" data-channel="email">
-            <span class="ch-icon">✉️</span> email
+            <svg class="ch-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+            </svg>
+            Email
           </button>
           <button class="channel-btn sms" data-channel="sms">
-            <span class="ch-icon">💬</span> sms
+            <svg class="ch-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+            </svg>
+            SMS
           </button>
           <button class="channel-btn whatsapp" data-channel="whatsapp">
-            <span class="ch-icon">🟢</span> whatsapp
+            <svg class="ch-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>
+            </svg>
+            WhatsApp
           </button>
         </div>
       </div>
@@ -70,7 +91,12 @@
         <!-- Populated by JS based on active channels -->
       </div>
 
-      <button class="send-btn" id="sendBtn">⚡ Send Notification</button>
+      <button class="send-btn" id="sendBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+        Send Notification
+      </button>
     </aside>
 
     <!-- RIGHT: INBOX + DETAIL + LOG -->
@@ -81,8 +107,8 @@
         <div class="inbox-header">
           <span class="inbox-title">Inbox</span>
           <div class="inbox-actions">
-            <button class="action-link" id="toggleUnreadBtn">unread only</button>
-            <button class="action-link" id="markAllReadBtn">mark all read</button>
+            <button class="action-link" id="toggleUnreadBtn">Unread only</button>
+            <button class="action-link" id="markAllReadBtn">Mark all read</button>
           </div>
         </div>
         <div class="notif-list" id="notifList">
@@ -101,7 +127,7 @@
 
       <!-- ACTIVITY LOG -->
       <div class="activity-log">
-        <div class="log-header">⬡ Activity Log</div>
+        <div class="log-header">Activity Log</div>
         <div class="log-entries" id="logEntries"></div>
       </div>
 
