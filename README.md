@@ -1,4 +1,4 @@
-# NotifyHub
+# 🔔 Notify Hub
 
 A backend-focused microservice for sending and managing notifications across multiple channels: **Push (real-time)**, **Email**, **SMS**, and **WhatsApp**. Designed to be consumed by other modules/services via a centralized API.
 
@@ -16,7 +16,7 @@ A backend-focused microservice for sending and managing notifications across mul
 
 ---
 
-## Overview
+## 📋 Overview
 
 This service exposes a simple API that any module can call to send a notification to a user. Internally, it handles:
 
@@ -28,7 +28,7 @@ The service does **not** manage users — it accepts a `recipientUserId` (UUID) 
 
 ---
 
-## Architecture
+## 🏗️ Architecture
 
 ```mermaid
 graph TD
@@ -77,7 +77,7 @@ graph TD
 
 ---
 
-## Database Schema
+## 🗄️ Database Schema
 
 ```mermaid
 erDiagram
@@ -120,7 +120,7 @@ erDiagram
 
 ---
 
-## API Reference
+## 📡 API Reference
 
 ### `POST /notifications`
 
@@ -270,7 +270,7 @@ Marks all unread notifications as read for a user and emits an `UnreadCountUpdat
 
 ---
 
-## Real-Time (SignalR)
+## ⚡ Real-Time (SignalR)
 
 The frontend connects to `NotificationsHub` on load. The server emits two events:
 
@@ -283,24 +283,24 @@ Clients join a group by `userId` on connection, so events are targeted — a use
 
 ---
 
-## Tech Stack
+## 🛠️ Tech Stack
 
 | Layer | Technology |
 |---|---|
-| API | ASP.NET Core |
-| Real-time | SignalR |
-| Async messaging | Rebus + RabbitMQ |
-| Workers | .NET Worker Services |
-| ORM | Entity Framework Core |
-| Email | SendGrid / SMTP |
-| SMS | SMS Provider (pluggable) |
-| WhatsApp | Meta Cloud API |
-| Database | PostgreSQL |
-| Infrastructure | docker compose |
+| 🌐 API | ASP.NET Core |
+| ⚡ Real-time | SignalR |
+| 📨 Async messaging | Rebus + RabbitMQ |
+| ⚙️ Workers | .NET Worker Services |
+| 🗃️ ORM | Entity Framework Core |
+| 📧 Email | SendGrid / SMTP |
+| 📱 SMS | SMS Provider (pluggable) |
+| 💬 WhatsApp | Meta Cloud API |
+| 🗄️ Database | PostgreSQL |
+| 🐳 Infrastructure | Docker Compose |
 
 ---
 
-## Running the Demo
+## 🚀 Running the Demo
 
 The demo UI allows you to simulate another module sending notifications to a user and see them arrive in real-time.
 
