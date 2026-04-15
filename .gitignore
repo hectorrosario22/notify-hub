@@ -483,3 +483,5 @@ $RECYCLE.BIN/
 
 # Git worktrees
 .worktrees/
+
+.superpowers

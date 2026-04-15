@@ -1,15 +1,115 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NotifyHub Demo</title>
-    <link rel="stylesheet" href="app.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NotifyHub Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="app.css">
 </head>
-
 <body>
-    <script src="app.js"></script>
-</body>
 
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="logo">
+      <div class="status-dot" id="statusDot"></div>
+      <span>NotifyHub</span>
+    </div>
+    <div class="divider"></div>
+    <div class="user-id-wrap">
+      <span class="user-label">USER</span>
+      <code class="user-id-display" id="userIdDisplay" title=""></code>
+      <button class="regen-btn" id="regenBtn" title="Generate new user ID">↻</button>
+    </div>
+    <div class="spacer"></div>
+    <button class="bell-wrap" id="bellBtn" title="Scroll to inbox">
+      <span class="bell-icon">🔔</span>
+      <span class="bell-label">UNREAD</span>
+      <span class="badge" id="unreadBadge">0</span>
+    </button>
+  </header>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- LEFT: SEND FORM -->
+    <aside class="left-panel">
+      <div class="panel-title">Send Notification</div>
+
+      <div class="field-group">
+        <label class="field-label" for="inputTitle">Title</label>
+        <input class="field-input" id="inputTitle" type="text" placeholder="e.g. Server alert" autocomplete="off">
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="inputBody">Body</label>
+        <textarea class="field-input field-textarea" id="inputBody" placeholder="Notification body…"></textarea>
+      </div>
+
+      <div class="field-group">
+        <span class="field-label">Channels</span>
+        <div class="channels-grid">
+          <button class="channel-btn active push" data-channel="push">
+            <span class="ch-icon">📡</span> push
+          </button>
+          <button class="channel-btn email" data-channel="email">
+            <span class="ch-icon">✉️</span> email
+          </button>
+          <button class="channel-btn sms" data-channel="sms">
+            <span class="ch-icon">💬</span> sms
+          </button>
+          <button class="channel-btn whatsapp" data-channel="whatsapp">
+            <span class="ch-icon">🟢</span> whatsapp
+          </button>
+        </div>
+      </div>
+
+      <div class="field-group" id="addressFields">
+        <!-- Populated by JS based on active channels -->
+      </div>
+
+      <button class="send-btn" id="sendBtn">⚡ Send Notification</button>
+    </aside>
+
+    <!-- RIGHT: INBOX + DETAIL + LOG -->
+    <section class="right-panel">
+
+      <!-- INBOX -->
+      <div class="inbox" id="inbox">
+        <div class="inbox-header">
+          <span class="inbox-title">Inbox</span>
+          <div class="inbox-actions">
+            <button class="action-link" id="toggleUnreadBtn">unread only</button>
+            <button class="action-link" id="markAllReadBtn">mark all read</button>
+          </div>
+        </div>
+        <div class="notif-list" id="notifList">
+          <div class="empty-state" id="emptyState">No notifications yet.</div>
+        </div>
+      </div>
+
+      <!-- DELIVERY DETAIL PANEL -->
+      <div class="detail-panel hidden" id="detailPanel">
+        <div class="detail-header">
+          <span class="detail-title">Deliveries</span>
+          <span class="detail-notif-name" id="detailNotifName"></span>
+        </div>
+        <div class="deliveries-grid" id="deliveriesGrid"></div>
+      </div>
+
+      <!-- ACTIVITY LOG -->
+      <div class="activity-log">
+        <div class="log-header">⬡ Activity Log</div>
+        <div class="log-entries" id="logEntries"></div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <script src="https://unpkg.com/@microsoft/signalr@8.0.7/dist/browser/signalr.min.js"></script>
+  <script src="app.js"></script>
+</body>
 </html>
