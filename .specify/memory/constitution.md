@@ -1,50 +1,66 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# NotifyHub Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Single Responsibility
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+Each class/module has ONE reason to change. Core domain logic separate from infrastructure. API handlers orchestrate, don't implement business rules. Workers consume messages, don't call other workers.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+**Why**: Isolating responsibilities prevents cascading changes. Infrastructure swaps (RabbitMQ → SQS, PostgreSQL → DynamoDB) require no domain logic edits.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### II. Input Validation at Boundaries
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+ALL external input (HTTP requests, queue messages, user data) validated before entering domain. Invalid requests fail fast with clear errors. Internal code assumes pre-validated data.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+**Why**: Single validation layer prevents scattered defensive checks. Boundaries are the trust frontier.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### III. Async-by-Design Split
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+Synchronous paths (real-time delivery) vs asynchronous paths (external integrations). Real-time paths must not block on external calls. External calls must be retriable without API changes.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+**Why**: Decoupling sync/async prevents customer-facing latency. Retry safety ensures resilience without breaking contracts.
+
+### IV. Provider Independence
+
+Domain logic never directly calls external services (email, SMS, WhatsApp, etc). Providers injected via interface/abstraction. Adding new channel requires new implementation only, zero domain changes.
+
+**Why**: Interfaces shield core logic from provider details. New channels → new adapter only, no core touching.
+
+### V. Data Consistency & Auditing
+
+Every operation (send, retry, fail) persisted to database before action taken. Allows recovery, replay, and audit trail. No in-memory-only state for critical operations.
+
+**Why**: Durability enables audit, recovery, and replaying. Database is source of truth for every state transition.
+
+### VI. Explicit Error Handling
+
+Distinguish retriable failures (network, rate limit) from permanent (invalid address, auth failure). Retry policy explicit, not implicit. Exceptions bubble up only for unexpected failures.
+
+**Why**: Explicit categorization prevents silent losses. Implicit retries hide real failures.
+
+### VII. Testing at Multiple Layers
+
+Unit tests mock boundaries (database, external APIs). Integration tests verify real workflows against actual infrastructure containers. No layer tested only in isolation.
+
+**Why**: Unit tests verify logic. Integration tests verify reality. Both required.
+
+### VIII. Observable by Default
+
+All entry points (HTTP, message consumption) logged. Failures include context: what was sent, why it failed, retry count. No silent failures or suppressed exceptions.
+
+**Why**: Silent failures are the hardest to debug. Context in logs prevents hours of guessing.
+
+## Non-Negotiables
+
+- New channels: zero schema changes, zero domain logic changes
+- Failure in one channel never blocks another
+- All delivery states (pending/sent/failed) queryable at any time
+- Message contracts versioned; breaking changes require explicit migration
+- No business logic in API controllers — extract to handlers/services
+- No directly instantiating external service clients — inject via DI/factory
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+Constitution supersedes all practices. PRs must demonstrate compliance with principles. Amendments require written rationale and migration plan. Runtime guidance in CLAUDE.md.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2026-04-20 | **Last Amended**: 2026-04-20
