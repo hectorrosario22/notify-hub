@@ -10,7 +10,7 @@ env:
   NODE_VERSION: '22'
 
 jobs:
-  deploy:
+  deploy-demo:
     environment: Production
     runs-on: ubuntu-latest
     permissions:
