@@ -11,6 +11,7 @@ env:
 
 jobs:
   deploy:
+    environment: Production
     runs-on: ubuntu-latest
     permissions:
       id-token: write
