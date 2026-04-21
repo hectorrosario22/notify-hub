@@ -9,6 +9,9 @@ on:
 env:
   NODE_VERSION: '22'
 
+permissions:
+  id-token: write
+
 jobs:
   deploy-demo:
     name: Deploy Demo UI to AWS
@@ -36,7 +39,7 @@ jobs:
         run: npm run build
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6.1.0
         with:
           role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
           aws-region: us-east-1
