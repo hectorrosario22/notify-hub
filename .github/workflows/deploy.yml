@@ -11,6 +11,7 @@ env:
 
 jobs:
   deploy-demo:
+    name: Deploy Demo UI to AWS
     environment: Production
     runs-on: ubuntu-latest
     permissions:
