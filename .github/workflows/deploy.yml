@@ -10,7 +10,9 @@ env:
   NODE_VERSION: '22'
 
 jobs:
-  deploy:
+  deploy-demo:
+    name: Deploy Demo UI to AWS
+    environment: Production
     runs-on: ubuntu-latest
     permissions:
       id-token: write
